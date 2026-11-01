@@ -97,6 +97,7 @@ def to_summary(order: Order) -> OrderSummaryOut:
         item_count=sum(oi.quantity for oi in order.items),
         created_at=order.created_at,
         estimated_ready_at=order.estimated_ready_at,
+        pickup_code=order.pickup_code,
         payment_method=order.payment_method,
         payment_status=order.payment_status,
         can_cancel=can_cancel(order),
