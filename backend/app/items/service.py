@@ -1,16 +1,30 @@
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.database.models import NON_VEG, VEG, Category, FoodItem, StockAlert, User
+from app.database.models import NON_VEG, VEG, Category, Feedback, FoodItem, StockAlert, User
 from app.inventory import service as inventory_service
 from app.inventory.service import Stock
 from app.items.schemas import CategoryOut, FoodItemOut
 
 
-def to_food_out(item: FoodItem, stock: Stock, popular: bool = False, notify_me: bool = False) -> FoodItemOut:
+def rating_summary(db: Session) -> Dict[int, Tuple[float, int]]:
+    """food_id -> (average rating to 1 decimal, number of ratings)."""
+    stmt = select(Feedback.food_item_id, func.avg(Feedback.rating), func.count(Feedback.id)).group_by(
+        Feedback.food_item_id
+    )
+    return {food_id: (round(float(avg), 1), count) for food_id, avg, count in db.execute(stmt)}
+
+
+def to_food_out(
+    item: FoodItem,
+    stock: Stock,
+    popular: bool = False,
+    notify_me: bool = False,
+    rating: Tuple[Optional[float], int] = (None, 0),
+) -> FoodItemOut:
     return FoodItemOut(
         id=item.id,
         name=item.name,
@@ -28,6 +42,8 @@ def to_food_out(item: FoodItem, stock: Stock, popular: bool = False, notify_me: 
         max_order_quantity=stock.max_order_quantity,
         popular=popular,
         notify_me=notify_me,
+        average_rating=rating[0],
+        rating_count=rating[1],
     )
 
 
@@ -68,6 +84,7 @@ def list_items(
     holds = inventory_service.active_holds(db, user_id)
     popular = inventory_service.popular_food_ids(db)
     alerted = _alerted_food_ids(db, user)
+    ratings = rating_summary(db)
 
     result = []
     for item in db.scalars(stmt).unique():
@@ -75,7 +92,9 @@ def list_items(
         stock = inventory_service.compute_stock(item.inventory, held, people, item.id in popular)
         if available_only and not stock.available:
             continue
-        result.append(to_food_out(item, stock, item.id in popular, item.id in alerted))
+        result.append(
+            to_food_out(item, stock, item.id in popular, item.id in alerted, ratings.get(item.id, (None, 0)))
+        )
     return result
 
 
@@ -90,7 +109,8 @@ def get_food_out(db: Session, food_id: int, user: Optional[User] = None) -> Food
     item = get_food_item(db, food_id)
     stock = inventory_service.stock_for_user(db, item.inventory, user.id if user else None)
     popular = item.id in inventory_service.popular_food_ids(db)
-    return to_food_out(item, stock, popular, item.id in _alerted_food_ids(db, user))
+    rating = rating_summary(db).get(item.id, (None, 0))
+    return to_food_out(item, stock, popular, item.id in _alerted_food_ids(db, user), rating)
 
 
 def list_categories(db: Session) -> List[CategoryOut]:
