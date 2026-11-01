@@ -33,3 +33,6 @@ class FoodItemOut(BaseModel):
     popular: bool
     # True when the logged-in customer asked to be notified when it is available again.
     notify_me: bool = False
+    # From customers' feedback; None until the item has been rated.
+    average_rating: Optional[float] = None
+    rating_count: int = 0
