@@ -26,9 +26,14 @@ function formatDateTime(timestamp) {
     return `${formatDate(timestamp)}, ${formatTime(timestamp)}`;
 }
 
+function paymentMethodLabel(paymentMethod) {
+    return paymentMethod === "CASH_ON_PICKUP" ? "Cash on pickup" : "Online";
+}
+
 function OrdersCard({ item }) {
-    const { updateOrder } = useContext(StaffOrdersContext);
+    const { updateOrder, recordCashPayment } = useContext(StaffOrdersContext);
     const [pickupCode, setPickupCode] = useState("");
+    const [amountReceived, setAmountReceived] = useState("");
     const [showPickupCode, setShowPickupCode] = useState(false);
     const nextStatus={
         "PLACED":"PREPARING",
@@ -50,9 +55,26 @@ function OrdersCard({ item }) {
             Alert.alert("Pickup code required", "Enter the customer's pickup code.");
             return;
         }
+
+        if (item.payment_method === "CASH_ON_PICKUP" && item.payment_status !== "PAID") {
+            const amount = Number(amountReceived);
+            if (!amountReceived.trim() || !Number.isFinite(amount) || amount <= 0) {
+                Alert.alert("Amount required", "Enter the cash amount received.");
+                return;
+            }
+
+            const paymentRecorded = await recordCashPayment(
+                item.order_id,
+                code,
+                amount,
+            );
+            if (!paymentRecorded) return;
+        }
+
         const updated = await updateOrder(item.order_id, item.status, { pickup_code: code });
         if (updated) {
             setPickupCode("");
+            setAmountReceived("");
             setShowPickupCode(false);
         }
     }
@@ -66,6 +88,7 @@ function OrdersCard({ item }) {
             </View>
             <Text>{item.customer} (ID {item.institute_id})</Text>
             <Text>Placed: {formatDateTime(item.created_at)}</Text>
+            <Text>Payment: {paymentMethodLabel(item.payment_method)}</Text>
             <View>
                 {item.items?.map((it, i) => (
                     <Text key={i}>{it.quantity} x {it.food ?? it.name}</Text>
@@ -93,7 +116,11 @@ function OrdersCard({ item }) {
             <Modal visible={showPickupCode} transparent animationType="fade" onRequestClose={() => setShowPickupCode(false)}>
                 <View style={{ flex: 1, justifyContent: "center", padding: 24, backgroundColor: "rgba(0,0,0,0.35)" }}>
                     <View style={{ backgroundColor: "#FFF8E7", borderWidth: 3, borderColor: "#111111", padding: 16, gap: 10 }}>
-                        <Text style={{ fontWeight: "900", fontSize: 18 }}>Enter pickup code</Text>
+                        <Text style={{ fontWeight: "900", fontSize: 18 }}>
+                            {item.payment_method === "CASH_ON_PICKUP" && item.payment_status !== "PAID"
+                                ? "Collect cash and enter pickup code"
+                                : "Enter pickup code"}
+                        </Text>
                         <TextInput
                             value={pickupCode}
                             onChangeText={setPickupCode}
@@ -102,6 +129,16 @@ function OrdersCard({ item }) {
                             keyboardType="number-pad"
                             style={styles.inputText}
                         />
+                        {item.payment_method === "CASH_ON_PICKUP" && item.payment_status !== "PAID" && (
+                            <TextInput
+                                value={amountReceived}
+                                onChangeText={setAmountReceived}
+                                placeholder="Amount received"
+                                placeholderTextColor="#666666"
+                                keyboardType="decimal-pad"
+                                style={styles.inputText}
+                            />
+                        )}
                         <View style={{ flexDirection: "row", gap: 8, display: "flex", flexDirection: "column"}}>
                             <Pressable onPress={() => setShowPickupCode(false)} style={styles.button}>
                                 <Text style={styles.buttonText}>Cancel</Text>
@@ -121,6 +158,41 @@ function OrdersCard({ item }) {
 function StaffOrdersProvider({ userData, children }) {
     const token = userData?.access_token;
     const [ordersList, setOrdersList] = useState([]);
+
+    async function recordCashPayment(orderId, pickupCode, amountReceived) {
+        try {
+            const response = await fetch(
+                `https://canteen-backend-xzko.onrender.com/staff/orders/${orderId}/cash-payment`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        pickup_code: pickupCode,
+                        amount_received: amountReceived,
+                    }),
+                },
+            );
+            const data = await response.json();
+            if (!response.ok) {
+                Alert.alert("Cash payment failed", data.detail || "Could not record cash payment.");
+                return false;
+            }
+
+            setOrdersList(current => current.map(order => (
+                order.order_id === orderId ? data : order
+            )));
+            if (data.change_given > 0) {
+                Alert.alert("Payment recorded", `Give change: ₹${data.change_given}`);
+            }
+            return true;
+        } catch (error) {
+            Alert.alert("Cash payment failed", "Unable to connect to the server.");
+            return false;
+        }
+    }
 
     async function updateOrder(orderId, currentStatus, payload) {
         const endpoints = {
@@ -183,7 +255,7 @@ function StaffOrdersProvider({ userData, children }) {
     }, [token]));
 
     return (
-        <StaffOrdersContext.Provider value={{ ordersList, updateOrder }}>
+        <StaffOrdersContext.Provider value={{ ordersList, updateOrder, recordCashPayment }}>
             {children}
         </StaffOrdersContext.Provider>
     );
