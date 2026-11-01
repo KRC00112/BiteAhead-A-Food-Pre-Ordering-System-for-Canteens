@@ -9,6 +9,7 @@ from app.admin.router import router as admin_router
 from app.auth.router import router as auth_router
 from app.cart.router import router as cart_router
 from app.database.database import init_db
+from app.feedback.router import router as feedback_router
 from app.inventory.router import router as inventory_router
 from app.items.router import legacy_router as items_legacy_router
 from app.items.router import router as items_router
@@ -50,6 +51,7 @@ app.include_router(orders_router)
 app.include_router(payments_router)
 app.include_router(staff_router)
 app.include_router(notifications_router)
+app.include_router(feedback_router)
 app.include_router(admin_router)
 app.include_router(live_router)
 

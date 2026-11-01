@@ -17,6 +17,7 @@ app/
   items/             Food items, categories, search/filter (Veg/Non-Veg, price)
   inventory/         Stock rules: cart holds, low-stock limits, stock status
   cart/              Cart and cart items
+  feedback/          Ratings and descriptions for the food items of served orders
   orders/            Place an order, order history, order details, the order lifecycle (stages, cash, cancel, refunds)
   staff/             Staff-only incoming orders, inventory and food item editing
   notifications/     In-app notifications and "Notify me" stock alerts
@@ -217,6 +218,10 @@ In Swagger, click **Authorize** and paste the token.
 | GET | `/orders` | User | My order history |
 | GET | `/orders/{order_id}` | User | Order details (e.g. `ORD-20261010-0001`): status, payment, `pickup_code`, `can_cancel`, `timeline` |
 | POST | `/orders/{order_id}/cancel` | User | Cancel my order `{reason?}`. Only while `PLACED`; stock goes back, payment refunded |
+| GET | `/orders/{order_id}/feedback` | User | Feedback form for my order: each item with my rating and description, if given |
+| POST | `/orders/{order_id}/feedback` | User | Rate and describe items of my `SERVED` order: `{items: [{food_id, rating, description}]}`. Sending an item again edits it |
+| GET | `/items/{food_id}/feedback` | – | An item's `average_rating`, `rating_count` and newest reviews (no customer names) |
+| GET | `/staff/feedback` | CANTEEN_STAFF / ADMIN | Every feedback with customer and order (`?food_id=1`, `?max_rating=2`) |
 | GET | `/staff/orders` | CANTEEN_STAFF / ADMIN | Incoming orders (`?status=PLACED` / `PREPARING` / `READY` / `SERVED` / `CANCELLED`) |
 | POST | `/staff/orders/{order_id}/preparing` | CANTEEN_STAFF | `PLACED` → `PREPARING` |
 | POST | `/staff/orders/{order_id}/ready` | CANTEEN_STAFF | `PREPARING` → `READY` |
@@ -353,6 +358,26 @@ Errors always look like `{ "detail": "..." }`, using these status codes:
 400 (empty cart), 401 (not logged in / bad credentials), 402 (not paid), 403 (wrong role / wrong
 pickup code), 404 (not found), 409 (duplicate / out of stock / wrong order stage), 422 (invalid input).
 
+## Feedback
+
+Customers give each food item they ordered a `rating` (whole number 1-5) and a `description`
+(1-1000 characters), both required. Feedback opens when the order is `SERVED` (409 before that) and
+only the customer who placed the order can give it. They can rate some items now and others later,
+and sending an item again edits it (`updated_at` is set).
+
+```jsonc
+// POST /orders/ORD-20261101-0003/feedback
+{ "items": [
+  { "food_id": 1, "rating": 5, "description": "Really tasty" },
+  { "food_id": 2, "rating": 3, "description": "A little cold" }
+] }
+// -> { "order_id": "ORD-20261101-0003", "status": "SERVED", "can_give_feedback": true,
+//      "items": [{ "food_id": 1, "food": "Veg Biryani", "quantity": 2, "rating": 5,
+//                  "description": "Really tasty", "created_at": "...", "updated_at": null }, ...] }
+```
+
+`GET /items` and `GET /items/{food_id}` also return `average_rating` (`null` until rated) and `rating_count`.
+
 ## Forgot password (email code)
 
 Students, faculty and staff can reset a forgotten password with a code sent to their email.
@@ -413,6 +438,7 @@ Read-only views are created automatically (PostgreSQL). In pgAdmin they're under
 | `users_overview` | Every registered user and their login status: `is_logged_in`, `active_sessions`, `total_logins`, `last_login_at`, `last_seen_at` |
 | `logged_in_users` | Only the users logged in right now, one row per active login (device, IP, login time) |
 | `orders_overview` | Every order, newest first: customer, status, total, payment method / status, cash received, Razorpay `payment_id`, items (`Veg Biryani x2, ...`), placed / ready times |
+| `feedback_overview` | Every feedback: order, food item, rating, description, customer, when |
 | `order_timeline` | Every order step (placed, preparing, ready, served, cancelled, cash received, refunded), who did it and when |
 | `admin_account` | The one permanent main canteen admin account and its login status |
 | `items_overview` | Every food item with category, `food_type` (VEG / NON_VEG), price, cooking time, ingredients and stock |
@@ -521,4 +547,4 @@ Settings (env vars): `CART_HOLD_MINUTES`, `LOW_STOCK_THRESHOLD`, `LOW_STOCK_MAX_
 
 ## Not done yet (planned)
 
-Pickup slots, push notifications (FCM; in-app notifications are done), feedback, reports.
+Pickup slots, push notifications (FCM; in-app notifications are done), reports.

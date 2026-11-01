@@ -110,6 +110,25 @@ VIEWS = {
         LEFT JOIN roles by_r ON by_r.id = by_u.role_id
         ORDER BY e.created_at DESC, e.id DESC
     """,
+    # Every feedback, newest first: who rated which item of which order.
+    "feedback_overview": """
+        SELECT
+            fb.id                                        AS feedback_id,
+            o.order_id,
+            f.name                                       AS food,
+            fb.rating,
+            fb.description,
+            u.institute_id,
+            u.username                                   AS customer,
+            fb.created_at,
+            fb.updated_at
+        FROM feedback fb
+        JOIN order_items oi ON oi.id = fb.order_item_id
+        JOIN orders o ON o.id = oi.order_id
+        JOIN food_items f ON f.id = fb.food_item_id
+        JOIN users u ON u.id = fb.user_id
+        ORDER BY fb.created_at DESC, fb.id DESC
+    """,
     # Every food item with its category, Veg / Non-Veg type and live stock.
     "items_overview": """
         SELECT

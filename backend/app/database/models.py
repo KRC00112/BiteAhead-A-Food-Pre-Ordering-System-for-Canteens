@@ -305,6 +305,28 @@ class OrderItem(Base):
     food_item: Mapped[FoodItem] = relationship(lazy="joined")
 
 
+class Feedback(Base):
+    """A customer's rating and description of one food item they ordered (one per order line)."""
+
+    __tablename__ = "feedback"
+    __table_args__ = (CheckConstraint("rating BETWEEN 1 AND 5", name="ck_feedback_rating"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    order_item_id: Mapped[int] = mapped_column(
+        ForeignKey("order_items.id", ondelete="CASCADE"), unique=True, nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    food_item_id: Mapped[int] = mapped_column(ForeignKey("food_items.id"), nullable=False, index=True)
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    # Set when the customer edits their feedback.
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+    order_item: Mapped[OrderItem] = relationship(lazy="joined")
+    user: Mapped[User] = relationship(lazy="joined")
+
+
 class OrderEvent(Base):
     """One step in an order's timeline: PLACED, PREPARING, READY, SERVED, CANCELLED,
     CASH_RECEIVED or REFUNDED, with who did it."""
