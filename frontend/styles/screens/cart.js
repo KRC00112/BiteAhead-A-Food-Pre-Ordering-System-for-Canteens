@@ -139,9 +139,8 @@ const cart = StyleSheet.create({
         padding: 12,
     },
     checkoutView: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
+        flexDirection: "column",
+        alignItems: "stretch",
         backgroundColor: "white",
         borderWidth: 2,
         borderColor: "black",

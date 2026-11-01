@@ -294,7 +294,7 @@ export default function Cart({route}) {
                             <Text style={cart.totalPrice}>₹ {totalPrice}</Text>
                         </View>
                         <Text style={{ fontWeight: "bold", marginTop: 10 }}>Payment method</Text>
-                        <View style={{ flexDirection: "row", gap: 8, marginVertical: 8 }}>
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginVertical: 8 }}>
                             {[
                                 ["UPI", "Pay with UPI"],
                                 ["CASH_ON_PICKUP", "Cash on pickup"],

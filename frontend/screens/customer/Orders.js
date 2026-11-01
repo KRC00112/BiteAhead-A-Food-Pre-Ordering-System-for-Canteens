@@ -39,6 +39,14 @@ export default function Orders({ route }) {
     fetchOrders();
   }, [token]);
 
+  useEffect(() => {
+      console.log(orders);
+  },[orders]);
+
+
+  
+
+
   return (
     <SafeAreaView style={orderStyles.container} edges={['top', 'left', 'right']}>
       <View style={styles.defaultView}>
@@ -49,27 +57,29 @@ export default function Orders({ route }) {
             {orders.map(item => (
             <View key={item.order_id} style={orderStyles.card}>
                 <View style={orderStyles.cardHeader}>
-                <Text style={orderStyles.orderId}>#{item.order_id}</Text>
-                <View
-                    style={[
-                    orderStyles.statusBadge,
-                    { backgroundColor: STATUS_COLORS[item.status?.toLowerCase()] ?? 'white' },
-                    ]}
-                >
-                    <Text style={orderStyles.statusText}>{item.status}</Text>
-                </View>
+                  <Text style={orderStyles.orderId}>#{item.order_id}</Text>
+                  <View
+                      style={[
+                      orderStyles.statusBadge,
+                      { backgroundColor: STATUS_COLORS[item.status?.toLowerCase()] ?? 'white' },
+                      ]}
+                  >
+                      <Text style={orderStyles.statusText}>{item.status}</Text>
+                  </View>
                 </View>
 
                 <View style={orderStyles.cardBody}>
-                <Text style={orderStyles.label}>Placed on</Text>
-                <Text style={orderStyles.value}>
-                    {new Date(item.created_at).toLocaleString()}
-                </Text>
+                  <Text style={orderStyles.label}>Placed on</Text>
+                  <Text style={orderStyles.value}>
+                      {new Date(item.created_at).toLocaleString()}
+                  </Text>
+                  <Text style={orderStyles.label}>Pickup code</Text>
+                  <Text style={orderStyles.pickupCode}>{item.pickup_code ?? "Unavailable"}</Text>
                 </View>
 
                 <View style={orderStyles.totalRow}>
-                <Text style={orderStyles.label}>Total</Text>
-                <Text style={orderStyles.totalText}>₹{item.total_amount}</Text>
+                  <Text style={orderStyles.label}>Total</Text>
+                  <Text style={orderStyles.totalText}>₹{item.total_amount}</Text>
                 </View>
             </View>
             ))}

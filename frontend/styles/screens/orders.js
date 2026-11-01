@@ -56,6 +56,11 @@ const orders = StyleSheet.create({
   value: {
     fontSize: 16,
   },
+  pickupCode: {
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

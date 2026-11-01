@@ -67,6 +67,8 @@ class OrderSummaryOut(BaseModel):
     item_count: int
     created_at: Optional[datetime]
     estimated_ready_at: Optional[datetime]
+    # Show this to the customer who placed the order at pickup.
+    pickup_code: Optional[str] = None
     payment_method: str
     payment_status: str
     can_cancel: bool
