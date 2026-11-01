@@ -56,11 +56,6 @@ const orders = StyleSheet.create({
   value: {
     fontSize: 16,
   },
-  pickupCode: {
-    fontSize: 24,
-    fontWeight: '900',
-    letterSpacing: 2,
-  },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -71,6 +66,16 @@ const orders = StyleSheet.create({
   totalText: {
     fontWeight: '900',
     fontSize: 22,
+  },
+  cancelButton: {
+    backgroundColor: '#EA9999',
+    borderTopWidth: 2,
+    padding: 10,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
   empty: {
     textAlign: 'center',
