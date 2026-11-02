@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     paddingRight: 14,
     paddingBottom: 28,
   },
-  adminFormHeader: {
+  formHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
