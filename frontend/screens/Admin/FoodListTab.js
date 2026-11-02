@@ -94,7 +94,7 @@ function FoodItemForm({ item, token, onSaved, onClose }) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator
         >
-          <View style={styles.adminFormHeader}>
+          <View style={styles.formHeader}>
             <View>
               <Text style={styles.sectionKicker}>{item ? 'Edit menu item' : 'New menu item'}</Text>
               <Text style={styles.sectionTitle}>{item ? item.name : 'Add food'}</Text>

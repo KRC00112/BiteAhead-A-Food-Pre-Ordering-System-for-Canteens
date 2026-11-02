@@ -67,6 +67,16 @@ const orders = StyleSheet.create({
     fontWeight: '900',
     fontSize: 22,
   },
+  ordersButtons: {
+    backgroundColor: '#EA9999',
+    borderTopWidth: 2,
+    padding: 10,
+    alignItems: 'center',
+  },
+  ordersButtonsText: {
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
   cancelButton: {
     backgroundColor: '#EA9999',
     borderTopWidth: 2,
@@ -76,6 +86,84 @@ const orders = StyleSheet.create({
   cancelButtonText: {
     fontWeight: '900',
     textTransform: 'uppercase',
+  },
+  feedbackButton: {
+    backgroundColor: '#9FC5E8',
+    borderTopWidth: 2,
+    padding: 10,
+    alignItems: 'center',
+  },
+  feedbackButtonText: {
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  feedbackOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    justifyContent: 'center',
+    padding: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+  feedbackForm: {
+    maxHeight: '90%',
+    backgroundColor: '#FFF8E7',
+    borderWidth: 3,
+    borderColor: '#111111',
+    padding: 16,
+  },
+  feedbackTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  feedbackOrder: {
+    marginBottom: 12,
+  },
+  feedbackItem: {
+    borderTopWidth: 2,
+    paddingVertical: 12,
+    gap: 6,
+  },
+  feedbackFood: {
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  ratingButton: {
+    borderWidth: 2,
+    borderColor: '#111111',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  ratingButtonSelected: {
+    backgroundColor: '#FFD966',
+  },
+  feedbackInput: {
+    minHeight: 80,
+    borderWidth: 2,
+    borderColor: '#111111',
+    padding: 8,
+    textAlignVertical: 'top',
+  },
+  submitFeedbackButton: {
+    backgroundColor: '#B6D7A8',
+    borderWidth: 2,
+    borderColor: '#111111',
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  submitFeedbackText: {
+    fontWeight: '900',
+  },
+  closeFeedbackButton: {
+    alignItems: 'center',
+    padding: 12,
   },
   empty: {
     textAlign: 'center',
