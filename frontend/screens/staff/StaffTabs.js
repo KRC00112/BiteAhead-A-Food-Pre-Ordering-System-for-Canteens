@@ -2,6 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StaffHome from './StaffHome';
+import StaffFeedback from './StaffFeedback';
 import Profile from '../Profile';
 
 const Tab = createBottomTabNavigator();
@@ -26,9 +27,14 @@ export default function StaffTabs({ route }) {
           borderTopColor: '#111111',
         },
         tabBarIcon: ({ color, size, focused }) => {
-          const iconName = tabRoute.name === 'Orders'
-            ? (focused ? 'receipt' : 'receipt-outline')
-            : (focused ? 'person' : 'person-outline');
+          let iconName;
+          if (tabRoute.name === 'Orders') {
+            iconName = focused ? 'receipt' : 'receipt-outline';
+          } else if (tabRoute.name === 'Feedback') {
+            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+          } else {
+            iconName = focused ? 'person' : 'person-outline';
+          }
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -39,6 +45,12 @@ export default function StaffTabs({ route }) {
         component={StaffHome}
         initialParams={{ userData }}
         options={{ tabBarLabel: 'Orders' }}
+      />
+      <Tab.Screen
+        name="Feedback"
+        component={StaffFeedback}
+        initialParams={{ userData }}
+        options={{ tabBarLabel: 'Feedback' }}
       />
       <Tab.Screen
         name="Profile"

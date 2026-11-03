@@ -68,7 +68,7 @@ function ItemListCard({item, addingItemsToCart, removingItemsFromCart, cartItems
 function MoreDetailsCard({ selectedItem, handleDetailsCardVisibility,addingItemsToCart, removingItemsFromCart }) {
     if (!selectedItem) return null;
 
-    const {name, description, ingredients, avg_cooking_time_minutes, stock_status, stock_message, popular, food_type,price} = selectedItem;
+    const {name, description, ingredients, avg_cooking_time_minutes, stock_status, stock_message, popular, food_type, price, average_rating, rating_count} = selectedItem;
 
     return (
         <View style={home.overlay}>
@@ -79,6 +79,11 @@ function MoreDetailsCard({ selectedItem, handleDetailsCardVisibility,addingItems
             <View style={[home.popupForm, home.detailsCard]}>
                 <Text style={home.detailsTitle}>{name}</Text>
                 <Text style={home.detailsPrice}>₹ {price}</Text>
+                {rating_count > 0 && (
+                    <Text>
+                        ★ {average_rating?.toFixed?.(1) ?? average_rating} ({rating_count} ratings)
+                    </Text>
+                )}
 
                 {popular && (
                     <View style={home.filterPrefBtn}>
