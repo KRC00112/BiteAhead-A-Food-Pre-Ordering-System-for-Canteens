@@ -53,6 +53,12 @@ ALWAYS = [
 ALWAYS_POSTGRES = [f"DROP VIEW IF EXISTS {name}" for name in VIEWS] + [
     "ALTER TABLE orders ALTER COLUMN payment_method TYPE VARCHAR(30)",
     "ALTER TABLE orders ALTER COLUMN payment_method SET DEFAULT 'UPI'",
+    # Feedback can be a rating, a description, or both (both were required at first).
+    "ALTER TABLE feedback ALTER COLUMN rating DROP NOT NULL",
+    "ALTER TABLE feedback ALTER COLUMN description DROP NOT NULL",
+    "ALTER TABLE feedback DROP CONSTRAINT IF EXISTS ck_feedback_not_empty",
+    "ALTER TABLE feedback ADD CONSTRAINT ck_feedback_not_empty "
+    "CHECK (rating IS NOT NULL OR description IS NOT NULL)",
 ]
 
 

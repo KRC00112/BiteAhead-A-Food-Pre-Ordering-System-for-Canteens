@@ -4419,7 +4419,7 @@
       ]
     },
     {
-      "name": "17. Feedback (ratings and descriptions)",
+      "name": "17. Feedback (rating and/or description)",
       "item": [
         {
           "name": "Login student (again, folder 13 logged out)",
@@ -4990,7 +4990,7 @@
           ]
         },
         {
-          "name": "Give feedback",
+          "name": "Neither rating nor description (422)",
           "request": {
             "method": "POST",
             "header": [
@@ -5023,7 +5023,56 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"items\": [\n    {\n      \"food_id\": 2,\n      \"rating\": 4,\n      \"description\": \"Tasty, but a little too spicy\"\n    }\n  ]\n}"
+              "raw": "{\n  \"items\": [\n    {\n      \"food_id\": 2\n    }\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Empty feedback -> 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Give feedback (rating only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders/{{feedback_order_id}}/feedback",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{feedback_order_id}}",
+                "feedback"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"food_id\": 2,\n      \"rating\": 4\n    }\n  ]\n}"
             }
           },
           "event": [
@@ -5033,7 +5082,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Saved -> 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"rating saved\", () => pm.expect(pm.response.json().items[0].rating).to.eql(4));"
+                  "const i = pm.response.json().items[0];",
+                  "pm.test(\"rating only\", () => { pm.expect(i.rating).to.eql(4); pm.expect(i.description).to.eql(null); });"
                 ]
               }
             }
@@ -5085,6 +5135,57 @@
                   "pm.test(\"Edited -> 200\", () => pm.response.to.have.status(200));",
                   "const i = pm.response.json().items[0];",
                   "pm.test(\"edited\", () => { pm.expect(i.rating).to.eql(5); pm.expect(i.updated_at).to.not.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add description only (rating kept)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders/{{feedback_order_id}}/feedback",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{feedback_order_id}}",
+                "feedback"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"food_id\": 2,\n      \"description\": \"Still great, slightly cold\"\n    }\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Saved -> 200\", () => pm.response.to.have.status(200));",
+                  "const i = pm.response.json().items[0];",
+                  "pm.test(\"rating kept, description changed\", () => { pm.expect(i.rating).to.eql(5); pm.expect(i.description).to.eql(\"Still great, slightly cold\"); });"
                 ]
               }
             }
