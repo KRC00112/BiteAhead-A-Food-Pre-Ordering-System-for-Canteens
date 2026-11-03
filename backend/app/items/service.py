@@ -11,9 +11,11 @@ from app.items.schemas import CategoryOut, FoodItemOut
 
 
 def rating_summary(db: Session) -> Dict[int, Tuple[float, int]]:
-    """food_id -> (average rating to 1 decimal, number of ratings)."""
-    stmt = select(Feedback.food_item_id, func.avg(Feedback.rating), func.count(Feedback.id)).group_by(
-        Feedback.food_item_id
+    """food_id -> (average rating to 1 decimal, number of ratings). Description-only feedback is left out."""
+    stmt = (
+        select(Feedback.food_item_id, func.avg(Feedback.rating), func.count(Feedback.rating))
+        .where(Feedback.rating.is_not(None))
+        .group_by(Feedback.food_item_id)
     )
     return {food_id: (round(float(avg), 1), count) for food_id, avg, count in db.execute(stmt)}
 
