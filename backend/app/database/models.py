@@ -306,10 +306,13 @@ class OrderItem(Base):
 
 
 class Feedback(Base):
-    """A customer's rating and description of one food item they ordered (one per order line)."""
+    """A customer's rating and/or description of one food item they ordered (one per order line)."""
 
     __tablename__ = "feedback"
-    __table_args__ = (CheckConstraint("rating BETWEEN 1 AND 5", name="ck_feedback_rating"),)
+    __table_args__ = (
+        CheckConstraint("rating BETWEEN 1 AND 5", name="ck_feedback_rating"),
+        CheckConstraint("rating IS NOT NULL OR description IS NOT NULL", name="ck_feedback_not_empty"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     order_item_id: Mapped[int] = mapped_column(
@@ -317,8 +320,9 @@ class Feedback(Base):
     )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     food_item_id: Mapped[int] = mapped_column(ForeignKey("food_items.id"), nullable=False, index=True)
-    rating: Mapped[int] = mapped_column(Integer, nullable=False)
-    description: Mapped[str] = mapped_column(Text, nullable=False)
+    # Either can be left out, but not both.
+    rating: Mapped[Optional[int]] = mapped_column(Integer)
+    description: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # Set when the customer edits their feedback.
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
