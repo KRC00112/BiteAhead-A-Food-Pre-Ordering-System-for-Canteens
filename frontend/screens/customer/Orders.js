@@ -31,6 +31,9 @@ export default function Orders({ route }) {
   const [feedbackItems, setFeedbackItems] = useState([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [submittedFeedbackOrders, setSubmittedFeedbackOrders] = useState(
+    new Set(),
+  );
 
   async function cancelOrder(orderId) {
     try {
@@ -127,12 +130,12 @@ export default function Orders({ route }) {
   async function submitFeedback() {
     const invalidItem = feedbackItems.find(
       (item) =>
-        !/^[1-5]$/.test(item.rating) || !item.description.trim(),
+        !/^[1-5]$/.test(item.rating) && !item.description.trim(),
     );
     if (invalidItem) {
       Alert.alert(
         "Complete the form",
-        "Give every food item a rating from 1 to 5 and a written comment.",
+        "Give every food item a rating from 1 to 5, a written comment, or both.",
       );
       return;
     }
@@ -150,8 +153,8 @@ export default function Orders({ route }) {
           body: JSON.stringify({
             items: feedbackItems.map((item) => ({
               food_id: item.food_id,
-              rating: Number(item.rating),
-              description: item.description.trim(),
+              rating: item.rating ? Number(item.rating) : null,
+              description: item.description.trim() || null,
             })),
           }),
         },
@@ -163,6 +166,11 @@ export default function Orders({ route }) {
         return;
       }
 
+      setSubmittedFeedbackOrders((currentOrders) => {
+        const nextOrders = new Set(currentOrders);
+        nextOrders.add(feedbackOrder.order_id);
+        return nextOrders;
+      });
       setFeedbackOrder(null);
       Alert.alert("Thank you", "Your feedback was submitted.");
     } catch (error) {
@@ -279,7 +287,8 @@ export default function Orders({ route }) {
                   <Text style={orderStyles.cancelButtonText}>Cancel order</Text>
                 </Pressable>
               )}
-              {item.status?.toUpperCase() === "SERVED" && (
+              {item.status?.toUpperCase() === "SERVED" &&
+                !submittedFeedbackOrders.has(item.order_id) && (
                 <Pressable
                   style={orderStyles.feedbackButton}
                   onPress={() => openFeedback(item)}
@@ -302,63 +311,83 @@ export default function Orders({ route }) {
               {feedbackLoading ? (
                 <Text style={orderStyles.value}>Loading form...</Text>
               ) : (
-                <ScrollView>
-                  {feedbackItems.map((item) => (
-                    <View key={item.food_id} style={orderStyles.feedbackItem}>
-                      <Text style={orderStyles.feedbackFood}>
-                        {item.food} x{item.quantity}
-                      </Text>
-                      <Text style={orderStyles.label}>Rating</Text>
-                      <View style={orderStyles.ratingRow}>
-                        {[1, 2, 3, 4, 5].map((rating) => (
+                <>
+                  <ScrollView style={orderStyles.feedbackItemsScroll}>
+                    {feedbackItems.map((item) => (
+                      <View key={item.food_id} style={orderStyles.feedbackItem}>
+                        <Text style={orderStyles.feedbackFood}>
+                          {item.food} x{item.quantity}
+                        </Text>
+                        <Text style={orderStyles.label}>Rating</Text>
+                        <View style={orderStyles.ratingRow}>
+                          {[1, 2, 3, 4, 5].map((rating) => (
+                            <Pressable
+                              key={rating}
+                              style={[
+                                orderStyles.ratingButton,
+                                item.rating === String(rating) &&
+                                  orderStyles.ratingButtonSelected,
+                              ]}
+                              onPress={() =>
+                                updateFeedbackItem(
+                                  item.food_id,
+                                  "rating",
+                                  String(rating),
+                                )
+                              }
+                            >
+                              <Text>{rating}</Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                        {item.rating && (
                           <Pressable
-                            key={rating}
-                            style={[
-                              orderStyles.ratingButton,
-                              item.rating === String(rating) &&
-                                orderStyles.ratingButtonSelected,
-                            ]}
+                            style={orderStyles.clearRatingButton}
                             onPress={() =>
-                              updateFeedbackItem(
-                                item.food_id,
-                                "rating",
-                                String(rating),
-                              )
+                              updateFeedbackItem(item.food_id, "rating", "")
                             }
                           >
-                            <Text>{rating}</Text>
+                            <Text style={orderStyles.clearRatingText}>
+                              Clear rating
+                            </Text>
                           </Pressable>
-                        ))}
+                        )}
+                        <TextInput
+                          value={item.description}
+                          onChangeText={(text) =>
+                            updateFeedbackItem(
+                              item.food_id,
+                              "description",
+                              text,
+                            )
+                          }
+                          placeholder="What did you think?"
+                          multiline
+                          maxLength={1000}
+                          style={orderStyles.feedbackInput}
+                        />
                       </View>
-                      <TextInput
-                        value={item.description}
-                        onChangeText={(text) =>
-                          updateFeedbackItem(item.food_id, "description", text)
-                        }
-                        placeholder="What did you think?"
-                        multiline
-                        maxLength={1000}
-                        style={orderStyles.feedbackInput}
-                      />
-                    </View>
-                  ))}
-                  <Pressable
-                    style={orderStyles.submitFeedbackButton}
-                    onPress={submitFeedback}
-                    disabled={feedbackSubmitting}
-                  >
-                    <Text style={orderStyles.submitFeedbackText}>
-                      {feedbackSubmitting ? "Submitting..." : "Submit feedback"}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={orderStyles.closeFeedbackButton}
-                    onPress={() => setFeedbackOrder(null)}
-                    disabled={feedbackSubmitting}
-                  >
-                    <Text>Close</Text>
-                  </Pressable>
-                </ScrollView>
+                    ))}
+                  </ScrollView>
+                  <View style={orderStyles.feedbackActions}>
+                    <Pressable
+                      style={orderStyles.submitFeedbackButton}
+                      onPress={submitFeedback}
+                      disabled={feedbackSubmitting}
+                    >
+                      <Text style={orderStyles.submitFeedbackText}>
+                        {feedbackSubmitting ? "Sending..." : "Send feedback"}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      style={orderStyles.closeFeedbackButton}
+                      onPress={() => setFeedbackOrder(null)}
+                      disabled={feedbackSubmitting}
+                    >
+                      <Text>Close</Text>
+                    </Pressable>
+                  </View>
+                </>
               )}
             </View>
           </View>

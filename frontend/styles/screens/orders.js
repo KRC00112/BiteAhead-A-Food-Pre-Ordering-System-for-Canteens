@@ -121,6 +121,12 @@ const orders = StyleSheet.create({
   feedbackOrder: {
     marginBottom: 12,
   },
+  feedbackItemsScroll: {
+    flexShrink: 1,
+  },
+  feedbackActions: {
+    flexShrink: 0,
+  },
   feedbackItem: {
     borderTopWidth: 2,
     paddingVertical: 12,
@@ -142,6 +148,14 @@ const orders = StyleSheet.create({
   },
   ratingButtonSelected: {
     backgroundColor: '#FFD966',
+  },
+  clearRatingButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 2,
+  },
+  clearRatingText: {
+    color: '#7048E8',
+    textDecorationLine: 'underline',
   },
   feedbackInput: {
     minHeight: 80,
