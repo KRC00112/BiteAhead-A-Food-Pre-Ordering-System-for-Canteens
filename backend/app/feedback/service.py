@@ -1,13 +1,14 @@
-"""Feedback: a rating (1-5) and a description for each food item a customer ordered.
+"""Feedback: a rating (1-5), a description, or both, for each food item a customer ordered.
 
-It opens once the order is SERVED, and sending it again for an item edits the earlier one.
+It opens once the order is SERVED. Sending an item again edits it: only the fields sent change,
+and null clears one, as long as a rating or a description is left.
 Customers' names are only shown to staff and the admin.
 """
 from datetime import datetime
-from typing import Annotated, List, Optional
+from typing import List, Optional
 
 from fastapi import HTTPException, status
-from pydantic import BaseModel, Field, StringConstraints, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -21,11 +22,22 @@ from app.orders import service as orders_service
 # ---------- Schemas ----------
 
 class FeedbackItemIn(BaseModel):
+    """Give a rating, a description, or both."""
+
     food_id: int
-    rating: int = Field(..., ge=1, le=5, examples=[4])
-    description: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)] = Field(
-        ..., examples=["Tasty, but a little too spicy"]
-    )
+    rating: Optional[int] = Field(None, ge=1, le=5, examples=[4])
+    description: Optional[str] = Field(None, max_length=1000, examples=["Tasty, but a little too spicy"])
+
+    @field_validator("description")
+    @classmethod
+    def blank_is_none(cls, v):
+        return (v or "").strip() or None
+
+    @model_validator(mode="after")
+    def has_something(self):
+        if not {"rating", "description"} & self.model_fields_set:
+            raise ValueError("Give a rating, a description, or both")
+        return self
 
 
 class FeedbackIn(BaseModel):
@@ -60,8 +72,9 @@ class OrderFeedbackOut(BaseModel):
 
 
 class ItemReviewOut(BaseModel):
-    rating: int
-    description: str
+    # Either can be null, never both.
+    rating: Optional[int]
+    description: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -69,6 +82,7 @@ class ItemReviewOut(BaseModel):
 class ItemFeedbackOut(BaseModel):
     food_id: int
     food: str
+    # Over the feedback that has a rating; description-only feedback doesn't count.
     average_rating: Optional[float]
     rating_count: int
     # Newest first, at most 50.
@@ -146,28 +160,33 @@ def submit_feedback(db: Session, user: User, order_code: str, data: FeedbackIn) 
             )
 
     now = utcnow()
+    saved = []
     for item in data.items:
         oi = order_items[item.food_id]
         feedback = db.scalar(select(Feedback).where(Feedback.order_item_id == oi.id))
         if feedback is None:
-            db.add(
-                Feedback(
-                    order_item_id=oi.id,
-                    user_id=user.id,
-                    food_item_id=oi.food_item_id,
-                    rating=item.rating,
-                    description=item.description,
-                    created_at=now,
-                )
-            )
+            feedback = Feedback(order_item_id=oi.id, user_id=user.id, food_item_id=oi.food_item_id, created_at=now)
+            db.add(feedback)
         else:
-            feedback.rating = item.rating
-            feedback.description = item.description
             feedback.updated_at = now
+        # Only the fields sent change, so a rating given earlier stays when a description is added.
+        for field in {"rating", "description"} & item.model_fields_set:
+            setattr(feedback, field, getattr(item, field))
+        if feedback.rating is None and feedback.description is None:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"{oi.food_item.name}: give a rating, a description, or both",
+            )
+        saved.append(feedback)
     db.commit()
     activity.event(
         f"Feedback for {order.order_id}: "
-        + ", ".join(f"{order_items[i.food_id].food_item.name} {i.rating}/5" for i in data.items)
+        + ", ".join(
+            f"{order_items[f.food_item_id].food_item.name} "
+            + (f"{f.rating}/5" if f.rating is not None else "comment only")
+            for f in saved
+        )
     )
     return _order_feedback_out(db, order)
 
@@ -206,7 +225,7 @@ def list_all_feedback(
     if food_id is not None:
         stmt = stmt.where(Feedback.food_item_id == food_id)
     if max_rating is not None:
-        stmt = stmt.where(Feedback.rating <= max_rating)
+        stmt = stmt.where(Feedback.rating <= max_rating)  # description-only feedback has no rating
     return [
         StaffFeedbackOut(
             **_review_fields(f),

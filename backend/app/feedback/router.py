@@ -25,8 +25,9 @@ def submit_feedback(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Rate (1-5) and describe the items of your order, once it is SERVED (409 before that).
-    Send one item or several; sending an item again edits your earlier feedback."""
+    """Rate (1-5) and/or describe the items of your order, once it is SERVED (409 before that).
+    Each item needs a rating, a description, or both. Sending an item again changes only the
+    fields sent (null clears one)."""
     return service.submit_feedback(db, user, order_id, data)
 
 

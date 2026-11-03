@@ -219,7 +219,7 @@ In Swagger, click **Authorize** and paste the token.
 | GET | `/orders/{order_id}` | User | Order details (e.g. `ORD-20261010-0001`): status, payment, `pickup_code`, `can_cancel`, `timeline` |
 | POST | `/orders/{order_id}/cancel` | User | Cancel my order `{reason?}`. Only while `PLACED`; stock goes back, payment refunded |
 | GET | `/orders/{order_id}/feedback` | User | Feedback form for my order: each item with my rating and description, if given |
-| POST | `/orders/{order_id}/feedback` | User | Rate and describe items of my `SERVED` order: `{items: [{food_id, rating, description}]}`. Sending an item again edits it |
+| POST | `/orders/{order_id}/feedback` | User | Rate and/or describe items of my `SERVED` order: `{items: [{food_id, rating?, description?}]}` (at least one of the two). Sending an item again edits it |
 | GET | `/items/{food_id}/feedback` | – | An item's `average_rating`, `rating_count` and newest reviews (no customer names) |
 | GET | `/staff/feedback` | CANTEEN_STAFF / ADMIN | Every feedback with customer and order (`?food_id=1`, `?max_rating=2`) |
 | GET | `/staff/orders` | CANTEEN_STAFF / ADMIN | Incoming orders (`?status=PLACED` / `PREPARING` / `READY` / `SERVED` / `CANCELLED`) |
@@ -360,23 +360,27 @@ pickup code), 404 (not found), 409 (duplicate / out of stock / wrong order stage
 
 ## Feedback
 
-Customers give each food item they ordered a `rating` (whole number 1-5) and a `description`
-(1-1000 characters), both required. Feedback opens when the order is `SERVED` (409 before that) and
-only the customer who placed the order can give it. They can rate some items now and others later,
-and sending an item again edits it (`updated_at` is set).
+Customers give each food item they ordered a `rating` (whole number 1-5), a `description`
+(up to 1000 characters), or both: at least one is needed. Feedback opens when the order is `SERVED`
+(409 before that) and only the customer who placed the order can give it. They can do some items
+now and others later. Sending an item again changes only the fields sent (`null` clears one, as
+long as the other is left) and sets `updated_at`, so a description can be added to an earlier rating.
 
 ```jsonc
 // POST /orders/ORD-20261101-0003/feedback
 { "items": [
   { "food_id": 1, "rating": 5, "description": "Really tasty" },
-  { "food_id": 2, "rating": 3, "description": "A little cold" }
+  { "food_id": 2, "rating": 3 },
+  { "food_id": 4, "description": "A little cold" }
 ] }
 // -> { "order_id": "ORD-20261101-0003", "status": "SERVED", "can_give_feedback": true,
 //      "items": [{ "food_id": 1, "food": "Veg Biryani", "quantity": 2, "rating": 5,
 //                  "description": "Really tasty", "created_at": "...", "updated_at": null }, ...] }
 ```
 
-`GET /items` and `GET /items/{food_id}` also return `average_rating` (`null` until rated) and `rating_count`.
+`GET /items` and `GET /items/{food_id}` also return `average_rating` (`null` until rated) and
+`rating_count`. Both only count feedback with a rating; description-only feedback still shows in
+`GET /items/{food_id}/feedback` (with `"rating": null`).
 
 ## Forgot password (email code)
 
