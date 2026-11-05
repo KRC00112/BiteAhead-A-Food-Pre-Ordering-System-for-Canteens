@@ -5354,6 +5354,607 @@
           ]
         }
       ]
+    },
+    {
+      "name": "18. Sales reports (admin token)",
+      "item": [
+        {
+          "name": "Admin login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/admin/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "admin",
+                "login"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"institute_id\": \"ADMIN001\",\n  \"password\": \"Admin@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Admin login OK -> 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"role is ADMIN\", () => pm.expect(j.role).to.eql(\"ADMIN\"));",
+                  "pm.collectionVariables.set(\"admin_token\", j.access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Overview: this week, month, quarter, year",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reports/sales/overview",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "sales",
+                "overview"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OK -> 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"4 periods\", () => pm.expect(j.map(p => p.period)).to.eql([\"weekly\", \"monthly\", \"quarterly\", \"yearly\"]));",
+                  "pm.test(\"each has summary and previous\", () => j.forEach(p => { pm.expect(p.summary).to.have.property(\"revenue\"); pm.expect(p.previous).to.have.property(\"revenue_change_percent\"); }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Weekly report (this week)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reports/sales?period=weekly",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "sales"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "weekly"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OK -> 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"period is weekly\", () => pm.expect(j.period).to.eql(\"weekly\"));",
+                  "pm.test(\"has summary, previous, highlights, items\", () => [\"summary\", \"previous\", \"highlights\", \"breakdown\", \"items\", \"not_sold\", \"categories\", \"food_types\", \"payment_methods\", \"customer_types\", \"peak_hours\"].forEach(k => pm.expect(j).to.have.property(k)));",
+                  "pm.test(\"breakdown adds up to the revenue\", () => pm.expect(j.breakdown.reduce((s, b) => s + b.revenue, 0)).to.be.closeTo(j.summary.revenue, 0.01));",
+                  "pm.test(\"items add up to the revenue\", () => pm.expect(j.items.reduce((s, i) => s + i.revenue, 0)).to.be.closeTo(j.summary.revenue, 0.01));",
+                  "pm.test(\"7 breakdown rows\", () => pm.expect(j.breakdown.length).to.eql(7));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Monthly report (this month)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reports/sales?period=monthly",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "sales"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "monthly"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OK -> 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"period is monthly\", () => pm.expect(j.period).to.eql(\"monthly\"));",
+                  "pm.test(\"has summary, previous, highlights, items\", () => [\"summary\", \"previous\", \"highlights\", \"breakdown\", \"items\", \"not_sold\", \"categories\", \"food_types\", \"payment_methods\", \"customer_types\", \"peak_hours\"].forEach(k => pm.expect(j).to.have.property(k)));",
+                  "pm.test(\"breakdown adds up to the revenue\", () => pm.expect(j.breakdown.reduce((s, b) => s + b.revenue, 0)).to.be.closeTo(j.summary.revenue, 0.01));",
+                  "pm.test(\"items add up to the revenue\", () => pm.expect(j.items.reduce((s, i) => s + i.revenue, 0)).to.be.closeTo(j.summary.revenue, 0.01));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Quarterly report (this quarter)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reports/sales?period=quarterly",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "sales"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "quarterly"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OK -> 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"period is quarterly\", () => pm.expect(j.period).to.eql(\"quarterly\"));",
+                  "pm.test(\"has summary, previous, highlights, items\", () => [\"summary\", \"previous\", \"highlights\", \"breakdown\", \"items\", \"not_sold\", \"categories\", \"food_types\", \"payment_methods\", \"customer_types\", \"peak_hours\"].forEach(k => pm.expect(j).to.have.property(k)));",
+                  "pm.test(\"breakdown adds up to the revenue\", () => pm.expect(j.breakdown.reduce((s, b) => s + b.revenue, 0)).to.be.closeTo(j.summary.revenue, 0.01));",
+                  "pm.test(\"items add up to the revenue\", () => pm.expect(j.items.reduce((s, i) => s + i.revenue, 0)).to.be.closeTo(j.summary.revenue, 0.01));",
+                  "pm.test(\"3 breakdown rows\", () => pm.expect(j.breakdown.length).to.eql(3));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Yearly report (this year)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reports/sales?period=yearly",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "sales"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "yearly"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OK -> 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"period is yearly\", () => pm.expect(j.period).to.eql(\"yearly\"));",
+                  "pm.test(\"has summary, previous, highlights, items\", () => [\"summary\", \"previous\", \"highlights\", \"breakdown\", \"items\", \"not_sold\", \"categories\", \"food_types\", \"payment_methods\", \"customer_types\", \"peak_hours\"].forEach(k => pm.expect(j).to.have.property(k)));",
+                  "pm.test(\"breakdown adds up to the revenue\", () => pm.expect(j.breakdown.reduce((s, b) => s + b.revenue, 0)).to.be.closeTo(j.summary.revenue, 0.01));",
+                  "pm.test(\"items add up to the revenue\", () => pm.expect(j.items.reduce((s, i) => s + i.revenue, 0)).to.be.closeTo(j.summary.revenue, 0.01));",
+                  "pm.test(\"12 breakdown rows\", () => pm.expect(j.breakdown.length).to.eql(12));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Past period: Q1 2026 (any day inside it)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reports/sales?period=quarterly&date=2026-02-10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "sales"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "quarterly"
+                },
+                {
+                  "key": "date",
+                  "value": "2026-02-10"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OK -> 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"period is quarterly\", () => pm.expect(j.period).to.eql(\"quarterly\"));",
+                  "pm.test(\"has summary, previous, highlights, items\", () => [\"summary\", \"previous\", \"highlights\", \"breakdown\", \"items\", \"not_sold\", \"categories\", \"food_types\", \"payment_methods\", \"customer_types\", \"peak_hours\"].forEach(k => pm.expect(j).to.have.property(k)));",
+                  "pm.test(\"breakdown adds up to the revenue\", () => pm.expect(j.breakdown.reduce((s, b) => s + b.revenue, 0)).to.be.closeTo(j.summary.revenue, 0.01));",
+                  "pm.test(\"items add up to the revenue\", () => pm.expect(j.items.reduce((s, i) => s + i.revenue, 0)).to.be.closeTo(j.summary.revenue, 0.01));",
+                  "pm.test(\"3 breakdown rows\", () => pm.expect(j.breakdown.length).to.eql(3));",
+                  "pm.test(\"Q1 2026 = Jan-Mar\", () => { pm.expect(j.start).to.eql(\"2026-01-01\"); pm.expect(j.end).to.eql(\"2026-03-31\"); pm.expect(j.label).to.eql(\"Q1 2026 (Jan-Mar)\"); });",
+                  "pm.test(\"compared with Q4 2025\", () => pm.expect(j.previous.label).to.eql(\"Q4 2025 (Oct-Dec)\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Trend: last 12 months",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reports/sales/trend?period=monthly&count=12",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "sales",
+                "trend"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "monthly"
+                },
+                {
+                  "key": "count",
+                  "value": "12"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OK -> 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"12 points, oldest first\", () => { pm.expect(j.points.length).to.eql(12); pm.expect(j.points[0].start < j.points[11].start).to.be.true; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Trend: last 8 weeks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reports/sales/trend?period=weekly&count=8",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "sales",
+                "trend"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "weekly"
+                },
+                {
+                  "key": "count",
+                  "value": "8"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OK -> 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"8 points\", () => pm.expect(j.points.length).to.eql(8));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid period (422)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reports/sales?period=daily",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "sales"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "daily"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Invalid input -> 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sales report (staff, 403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reports/sales?period=monthly",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "sales"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "monthly"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Forbidden -> 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sales report (no token, 401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/reports/sales?period=monthly",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "sales"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "monthly"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Not logged in -> 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
