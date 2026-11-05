@@ -23,6 +23,9 @@ SEED_ADMIN_INSTITUTE_ID = os.getenv("SEED_ADMIN_INSTITUTE_ID", "ADMIN001")
 SEED_ADMIN_USERNAME = os.getenv("SEED_ADMIN_USERNAME", "canteen_admin")
 SEED_ADMIN_PASSWORD = os.getenv("SEED_ADMIN_PASSWORD", "Admin@123")
 
+# Sales reports group orders by the canteen's local day, week, month, quarter and year.
+CANTEEN_TIMEZONE = os.getenv("CANTEEN_TIMEZONE", "Asia/Kolkata")
+
 # Password recovery ("Forgot password" emails a one-time code)
 OTP_EXPIRE_MINUTES = int(os.getenv("OTP_EXPIRE_MINUTES", "10"))
 OTP_MAX_ATTEMPTS = int(os.getenv("OTP_MAX_ATTEMPTS", "5"))

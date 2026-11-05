@@ -21,6 +21,7 @@ app/
   orders/            Place an order, order history, order details, the order lifecycle (stages, cash, cancel, refunds)
   staff/             Staff-only incoming orders, inventory and food item editing
   notifications/     In-app notifications and "Notify me" stock alerts
+  reports/           Admin sales reports: weekly, monthly, quarterly, yearly (read-only)
 seed.py              Seeds roles, staff and admin accounts, food items
 ```
 
@@ -139,6 +140,7 @@ docker compose up --build
 | Incoming orders (`GET /staff/orders`) | ✅ | ✅ |
 | Approve / deactivate staff (`/admin/staff`) | ✅ | – |
 | All users, customer details, orders, logins (`/admin/*`) | ✅ | – |
+| Sales reports (`/admin/reports/*`) | ✅ | – |
 
 ## Seed data
 
@@ -246,6 +248,9 @@ In Swagger, click **Authorize** and paste the token.
 | POST | `/admin/items` | ADMIN | Add a food item: `name`, `price`, `category` (new categories are created), optional `description`, `food_type`, `ingredients`, `avg_cooking_time_minutes`. It starts with 0 stock until staff restock it |
 | PATCH | `/admin/items/{food_id}` | ADMIN | Edit `name`, `price`, `description`, `category`, `food_type`, `ingredients`, `avg_cooking_time_minutes` (only the fields sent). Past orders keep their price |
 | DELETE | `/admin/items/{food_id}` | ADMIN | Remove an item. Past orders still show it; it is taken out of carts (customers get an `ITEM_REMOVED` notification) |
+| GET | `/admin/reports/sales/overview` | ADMIN | This week, month, quarter and year: orders, revenue, collected / pending, cancellations, % change from the period before (`?date=`) |
+| GET | `/admin/reports/sales` | ADMIN | Full report for one period (`?period=weekly\|monthly\|quarterly\|yearly&date=YYYY-MM-DD`): see [Sales reports](#sales-reports) |
+| GET | `/admin/reports/sales/trend` | ADMIN | Orders and revenue for the last N periods, for a chart (`?period=monthly&count=12`) |
 | GET | `/notifications` | User | My notifications + `unread_count` (`?unread_only=true`) |
 | POST | `/notifications/{id}/read` | User | Mark one as read |
 | POST | `/notifications/read-all` | User | Mark all as read |
@@ -381,6 +386,38 @@ long as the other is left) and sets `updated_at`, so a description can be added 
 `GET /items` and `GET /items/{food_id}` also return `average_rating` (`null` until rated) and
 `rating_count`. Both only count feedback with a rating; description-only feedback still shows in
 `GET /items/{food_id}/feedback` (with `"rating": null`).
+
+## Sales reports
+
+Read-only monitoring for the admin. Staff, students and faculty get 403.
+
+- A **sale** is an order that was not cancelled. It counts on the day it was **placed**, in canteen
+  time (`CANTEEN_TIMEZONE`, default `Asia/Kolkata`).
+- `revenue` is the order totals at the prices paid. `collected` is the part already paid (UPI, or
+  cash taken at the counter). `pending` is cash not collected yet. Cancelled orders are counted
+  separately in `cancelled_orders` / `cancelled_amount`.
+- Weeks run Monday to Sunday. Quarters are calendar quarters (Q1 = Jan-Mar). `date` (default today)
+  is any day inside the period, so `?period=quarterly&date=2026-02-10` is Q1 2026.
+
+`GET /admin/reports/sales?period=monthly` returns:
+
+| Field | What it shows |
+|---|---|
+| `label`, `start`, `end` | e.g. `November 2026`, `2026-11-01`, `2026-11-30` (`end` is the last day included) |
+| `summary` | `orders`, `items_sold`, `revenue`, `collected`, `pending`, `average_order_value`, `customers`, `cancelled_orders`, `cancelled_amount` |
+| `previous` | The period before: `orders`, `revenue`, `orders_change_percent`, `revenue_change_percent` (`null` when it had no sales) |
+| `highlights` | `best_seller` (most sold), `top_earner` (most revenue), `highest_rated` / `lowest_rated` (items with at least 3 ratings), `busiest_hour`, `best_day` |
+| `breakdown` | Every day (weekly / monthly) or month (quarterly / yearly), including days with no sales: `orders`, `items_sold`, `revenue` |
+| `items` | Every item sold, by revenue: `quantity`, `revenue`, `revenue_share_percent`, `orders`, `average_rating` / `rating_count` (from feedback on this period's orders), `removed` |
+| `not_sold` | Menu items that did not sell at all in the period |
+| `categories`, `food_types` | Quantity, revenue and share per category and for Veg / Non-Veg |
+| `payment_methods`, `customer_types` | Orders and revenue for `UPI` / `CASH_ON_PICKUP` and for `STUDENT` / `FACULTY` |
+| `peak_hours` | Orders and revenue per hour of the day (`13:00-14:00`), only hours with orders |
+
+`GET /admin/reports/sales/overview` returns the `summary` and `previous` for the current week,
+month, quarter and year in one call, for the admin home screen. `GET /admin/reports/sales/trend`
+returns `points` (oldest first: `label`, `orders`, `items_sold`, `revenue`, `collected`,
+`cancelled_orders`), e.g. the last 12 months or 8 quarters, for a line or bar chart.
 
 ## Forgot password (email code)
 
@@ -551,4 +588,4 @@ Settings (env vars): `CART_HOLD_MINUTES`, `LOW_STOCK_THRESHOLD`, `LOW_STOCK_MAX_
 
 ## Not done yet (planned)
 
-Pickup slots, push notifications (FCM; in-app notifications are done), reports.
+Pickup slots, push notifications (FCM; in-app notifications are done).

@@ -16,6 +16,7 @@ from app.items.router import router as items_router
 from app.notifications.router import router as notifications_router
 from app.orders.router import router as orders_router
 from app.payments.router import router as payments_router
+from app.reports.router import router as reports_router
 from app.staff.router import router as staff_router
 from app.users.router import router as users_router
 
@@ -53,6 +54,7 @@ app.include_router(staff_router)
 app.include_router(notifications_router)
 app.include_router(feedback_router)
 app.include_router(admin_router)
+app.include_router(reports_router)
 app.include_router(live_router)
 
 
