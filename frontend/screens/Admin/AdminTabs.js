@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdminHomeTabs from './AdminHomeTabs/AdminHomeTabs';
 import FoodListTab from './FoodListTab';
+import ReportsTab from './ReportsTab';
 import Profile from '../Profile';
 
 const Tab = createBottomTabNavigator();
@@ -33,6 +34,8 @@ export default function AdminTabs({ route }) {
             iconName = focused ? 'people' : 'people-outline';
           }else if (tabRoute.name === 'Food List') {
             iconName = focused ? 'fast-food' : 'fast-food-outline';
+          } else if (tabRoute.name === 'Reports') {
+            iconName = focused ? 'bar-chart' : 'bar-chart-outline';
           } else {
             iconName = focused ? 'person' : 'person-outline';
           }
@@ -53,6 +56,13 @@ export default function AdminTabs({ route }) {
         component={FoodListTab}
         initialParams={{ userData }}
         options={{ tabBarLabel: 'Food List' }}
+      />
+
+      <Tab.Screen
+        name="Reports"
+        component={ReportsTab}
+        initialParams={{ userData }}
+        options={{ tabBarLabel: 'Reports' }}
       />
 
       <Tab.Screen

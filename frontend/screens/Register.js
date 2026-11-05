@@ -4,22 +4,19 @@ import styles from '../styles'
 import { TextInput } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export default function Register(){
     const navigation = useNavigation();
 
     const [instituteID, setInstituteID]=useState("");
     const [username, setUsername]=useState("");
+    const [email, setEmail]=useState("");
     const [password, setPassword]=useState("");
-    const [confirmPassword, setConfirmPassword]=useState("");
-    const [focus, setFocus]=useState(false);
-    const [selectedRole, setSelectedRole]=useState("");
-
-
-    useEffect(()=>{
-        console.log(selectedRole)
-    },[selectedRole])
+    const [confirmPassword,setConfirmPassword]=useState("");
+    const [focus,setFocus]=useState(false);
+    const [selectedRole,setSelectedRole]=useState("");
+    const [showRoleOptions,setShowRoleOptions]=useState(false);
 
     async function sendData(){
         try{
@@ -35,7 +32,8 @@ export default function Register(){
                         institute_id: instituteID,
                         username: username,
                         password: password,
-                        confirm_password: confirmPassword 
+                        confirm_password: confirmPassword,
+                        email: email.trim() || null,
                     }),
                 });
 
@@ -50,17 +48,20 @@ export default function Register(){
                         institute_id: instituteID,
                         username: username,
                         password: password,
-                        confirm_password: confirmPassword 
+                        confirm_password: confirmPassword,
+                        email: email.trim() || null,
                     }),
                 });
 
+            } else {
+                Alert.alert('Registration Failed', 'Select Student or Faculty as your role.');
+                return;
             }
            
 
-            // const data=await response.json();
             if(!response.ok){
-                Alert.alert('Registration Failed', "something went wrong");
-                console.log(response)
+                const error = await response.json();
+                Alert.alert('Registration Failed', error.detail || "Could not create your account.");
                 return;
             }
 
@@ -105,14 +106,43 @@ export default function Register(){
                     />
                 </View>
                 <View style={styles.formInputComponent}>
+                    <Text style={styles.formInputLabel}>Recovery email (optional)</Text>
+                    <TextInput
+                        style={styles.inputText}
+                        placeholder="Enter recovery email..."
+                        placeholderTextColor="#666666"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        onChangeText={value=>setEmail(value)}
+                    />
+                </View>
+                <View style={styles.formInputComponent}>
                     <Text style={styles.formInputLabel}>Select role</Text>
-                    <select style={styles.inputText} onChange={e=>setSelectedRole(e.target.value)}>
-                        <option value="">No option selected</option>
-                        <option value="STUDENT">STUDENT</option>
-                        <option value="FACULTY">FACULTY</option>
-                        <option value="CANTEEN_STAFF">CANTEEN_STAFF</option>
-                        <option value="ADMIN">ADMIN</option>
-                    </select>
+                    <Pressable
+                        style={styles.inputText}
+                        onPress={() => setShowRoleOptions((current) => !current)}
+                    >
+                        <Text>{selectedRole || "Select role..."}</Text>
+                    </Pressable>
+                    {showRoleOptions && (
+                        <View style={register.roleOptions}>
+                            {[
+                                ["STUDENT", "Student"],
+                                ["FACULTY", "Faculty"],
+                            ].map(([value, label]) => (
+                                <Pressable
+                                    key={value}
+                                    style={register.roleOption}
+                                    onPress={() => {
+                                        setSelectedRole(value);
+                                        setShowRoleOptions(false);
+                                    }}
+                                >
+                                    <Text>{label}</Text>
+                                </Pressable>
+                            ))}
+                        </View>
+                    )}
                 </View>
 
 

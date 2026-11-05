@@ -9,6 +9,17 @@ const register = StyleSheet.create({
     width:'100%',
     height:'100%',
   },
+  roleOptions: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 3,
+    borderColor: '#111111',
+    marginTop: 4,
+  },
+  roleOption: {
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#AAAAAA',
+  },
   confirmPasswordLabels:{
     display: 'flex',
     flexDirection: 'row',

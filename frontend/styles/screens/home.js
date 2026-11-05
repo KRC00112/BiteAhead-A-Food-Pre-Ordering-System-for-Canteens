@@ -188,9 +188,126 @@ goToCartBtn:{
       alignItems:'center',
 
 },
+appBarActions: {
+  flexDirection: 'row',
+  justifyContent: 'flex-end',
+  gap: 8,
+},
+notificationBadge: {
+  position: 'absolute',
+  top: -7,
+  right: -7,
+  minWidth: 20,
+  height: 20,
+  paddingHorizontal: 4,
+  borderRadius: 10,
+  backgroundColor: '#EA9999',
+  borderWidth: 2,
+  borderColor: '#111111',
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+notificationBadgeText: {
+  fontSize: 10,
+  fontWeight: '900',
+},
+notificationPanel: {
+  width: '90%',
+  maxHeight: '80%',
+  backgroundColor: '#FFF8E7',
+  borderWidth: 3,
+  borderColor: '#111111',
+  padding: 14,
+  gap: 8,
+},
+notificationHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+},
+notificationTitle: {
+  fontSize: 24,
+  fontWeight: '900',
+},
+markAllReadButton: {
+  alignSelf: 'flex-start',
+  borderWidth: 2,
+  borderColor: '#111111',
+  backgroundColor: '#B6D7A8',
+  padding: 8,
+},
+markAllReadText: {
+  fontWeight: '900',
+},
+notificationList: {
+  flexShrink: 1,
+},
+notificationItem: {
+  borderWidth: 2,
+  borderColor: '#111111',
+  padding: 10,
+  marginBottom: 8,
+  gap: 4,
+  backgroundColor: '#FFFFFF',
+},
+unreadNotificationItem: {
+  backgroundColor: '#FFF2B2',
+},
+notificationItemHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+},
+notificationType: {
+  fontSize: 12,
+  fontWeight: '900',
+  textTransform: 'uppercase',
+},
+unreadDot: {
+  width: 10,
+  height: 10,
+  borderRadius: 5,
+  backgroundColor: '#E06666',
+},
+notificationDate: {
+  color: '#666666',
+  fontSize: 12,
+},
 detailsCard: {
   width: '85%',
+  height: '82%',
   gap: 10,
+},
+detailsScroll: {
+  flex: 1,
+},
+detailsContent: {
+  gap: 10,
+  paddingBottom: 8,
+},
+feedbackSection: {
+  borderTopWidth: 2,
+  borderTopColor: '#111111',
+  paddingTop: 10,
+  gap: 8,
+},
+feedbackSectionTitle: {
+  fontWeight: '900',
+  fontSize: 18,
+},
+reviewCard: {
+  backgroundColor: '#FFFFFF',
+  borderWidth: 2,
+  borderColor: '#111111',
+  padding: 8,
+  gap: 4,
+},
+reviewRating: {
+  fontWeight: '900',
+},
+reviewDate: {
+  color: '#666666',
+  fontSize: 12,
 },
 detailsTitle: {
   fontWeight: '900',

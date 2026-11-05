@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StaffHome from './StaffHome';
 import StaffFeedback from './StaffFeedback';
+import StaffInventory from './StaffInventory';
 import Profile from '../Profile';
 
 const Tab = createBottomTabNavigator();
@@ -32,6 +33,8 @@ export default function StaffTabs({ route }) {
             iconName = focused ? 'receipt' : 'receipt-outline';
           } else if (tabRoute.name === 'Feedback') {
             iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+          } else if (tabRoute.name === 'Inventory') {
+            iconName = focused ? 'cube' : 'cube-outline';
           } else {
             iconName = focused ? 'person' : 'person-outline';
           }
@@ -51,6 +54,12 @@ export default function StaffTabs({ route }) {
         component={StaffFeedback}
         initialParams={{ userData }}
         options={{ tabBarLabel: 'Feedback' }}
+      />
+      <Tab.Screen
+        name="Inventory"
+        component={StaffInventory}
+        initialParams={{ userData }}
+        options={{ tabBarLabel: 'Inventory' }}
       />
       <Tab.Screen
         name="Profile"
