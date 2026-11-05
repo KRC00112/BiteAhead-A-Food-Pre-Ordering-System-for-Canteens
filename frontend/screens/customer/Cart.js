@@ -237,7 +237,14 @@ export default function Cart({route}) {
                 name: "Canteen App",
                 description: "Canteen order payment",
                 order_id: paymentOrder.order_id,
-                method: { upi: true },
+                method: {
+                    upi: true,
+                    card: false,
+                    netbanking: false,
+                    wallet: true,
+                    emi: false,
+                    paylater: false,
+                },
             });
             console.log("RAZORPAY PAYMENT SUCCESS", paymentResult);
 

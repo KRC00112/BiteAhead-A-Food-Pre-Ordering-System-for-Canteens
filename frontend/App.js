@@ -20,6 +20,7 @@ import CustomerTabs from './screens/customer/CustomerTabs';
 import AdminTabs from './screens/admin/AdminTabs';
 import StaffTabs from './screens/staff/StaffTabs';
 import Orders from './screens/customer/Orders';
+import ForgotPassword from './screens/ForgotPassword';
 
 
 
@@ -29,6 +30,12 @@ const RootStack = createNativeStackNavigator({
   screens: {
     Login: {
       screen: Login,
+      options:{
+        headerShown:false,
+      }
+    },
+    ForgotPassword: {
+      screen: ForgotPassword,
       options:{
         headerShown:false,
       }

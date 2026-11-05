@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import styles from "../../styles"
 import home from "../../styles/screens/home";
-import { useState, useEffect,useCallback } from "react";
+import { useState, useCallback } from "react";
 import { ScrollView } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 
@@ -65,7 +65,15 @@ function ItemListCard({item, addingItemsToCart, removingItemsFromCart, cartItems
 }
 
 
-function MoreDetailsCard({ selectedItem, handleDetailsCardVisibility,addingItemsToCart, removingItemsFromCart }) {
+function MoreDetailsCard({
+    selectedItem,
+    itemFeedback,
+    feedbackLoading,
+    feedbackError,
+    handleDetailsCardVisibility,
+    addingItemsToCart,
+    removingItemsFromCart,
+}) {
     if (!selectedItem) return null;
 
     const {name, description, ingredients, avg_cooking_time_minutes, stock_status, stock_message, popular, food_type, price, average_rating, rating_count} = selectedItem;
@@ -77,51 +85,81 @@ function MoreDetailsCard({ selectedItem, handleDetailsCardVisibility,addingItems
                 onPress={handleDetailsCardVisibility}
             />
             <View style={[home.popupForm, home.detailsCard]}>
-                <Text style={home.detailsTitle}>{name}</Text>
-                <Text style={home.detailsPrice}>₹ {price}</Text>
-                {rating_count > 0 && (
-                    <Text>
-                        ★ {average_rating?.toFixed?.(1) ?? average_rating} ({rating_count} ratings)
-                    </Text>
-                )}
+                <ScrollView style={home.detailsScroll} contentContainerStyle={home.detailsContent}>
+                    <Text style={home.detailsTitle}>{name}</Text>
+                    <Text style={home.detailsPrice}>₹ {price}</Text>
+                    {rating_count > 0 && (
+                        <Text>
+                            ★ {average_rating?.toFixed?.(1) ?? average_rating} ({rating_count} ratings)
+                        </Text>
+                    )}
 
-                {popular && (
-                    <View style={home.filterPrefBtn}>
-                        <Text style={{ fontWeight: 'bold' }}>★ Popular</Text>
-                    </View>
-                )}
-
-                {description && <Text>{description}</Text>}
-
-                 <View style={[home.veg, { borderColor: food_type==="VEG" ? 'green' : 'red' }]}>
-                    <Text style={{ color: food_type==="VEG" ? 'green' : 'red', fontWeight: 'bold' }}>
-                        {food_type==="VEG" ? '● Veg' : '▲ Non-Veg'}
-                    </Text>
-                </View> 
-
-                {ingredients?.length > 0 && (
-                    <View>
-                        <Text style={{ fontWeight: 'bold' }}>Ingredients:</Text>
-                        <View style={home.itemsGrouping}>
-                            {ingredients.map(ing => (
-                                <View key={ing} style={home.filterPrefBtn}>
-                                    <Text>{ing}</Text>
-                                </View>
-                            ))}
+                    {popular && (
+                        <View style={home.filterPrefBtn}>
+                            <Text style={{ fontWeight: 'bold' }}>★ Popular</Text>
                         </View>
+                    )}
+
+                    {description && <Text>{description}</Text>}
+
+                    <View style={[home.veg, { borderColor: food_type==="VEG" ? 'green' : 'red' }]}>
+                        <Text style={{ color: food_type==="VEG" ? 'green' : 'red', fontWeight: 'bold' }}>
+                            {food_type==="VEG" ? '● Veg' : '▲ Non-Veg'}
+                        </Text>
                     </View>
-                )}
 
-                <Text>
-                    <Text style={{ fontWeight: 'bold' }}>Estimated cooking time: </Text>
-                    ~{avg_cooking_time_minutes} min
-                </Text>
+                    {ingredients?.length > 0 && (
+                        <View>
+                            <Text style={{ fontWeight: 'bold' }}>Ingredients:</Text>
+                            <View style={home.itemsGrouping}>
+                                {ingredients.map(ing => (
+                                    <View key={ing} style={home.filterPrefBtn}>
+                                        <Text>{ing}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    )}
 
-                {stock_status !== "IN_STOCK" && (
-                    <Text style={{ color: 'red', fontWeight: 'bold' }}>
-                        {stock_message}
+                    <Text>
+                        <Text style={{ fontWeight: 'bold' }}>Estimated cooking time: </Text>
+                        ~{avg_cooking_time_minutes} min
                     </Text>
-                )}
+
+                    {stock_status !== "IN_STOCK" && (
+                        <Text style={{ color: 'red', fontWeight: 'bold' }}>
+                            {stock_message}
+                        </Text>
+                    )}
+
+                    <View style={home.feedbackSection}>
+                        <Text style={home.feedbackSectionTitle}>Customer feedback</Text>
+                        {feedbackLoading ? (
+                            <Text>Loading feedback...</Text>
+                        ) : feedbackError ? (
+                            <Text>{feedbackError}</Text>
+                        ) : !itemFeedback?.reviews?.length ? (
+                            <Text>No feedback yet.</Text>
+                        ) : (
+                            itemFeedback.reviews.map((review, index) => (
+                                <View key={`${review.created_at}-${index}`} style={home.reviewCard}>
+                                    {review.rating != null && (
+                                        <Text style={home.reviewRating}>★ {review.rating}/5</Text>
+                                    )}
+                                    {review.description && (
+                                        <Text>{review.description}</Text>
+                                    )}
+                                    <Text style={home.reviewDate}>
+                                        {review.created_at
+                                            ? new Date(review.created_at).toLocaleString()
+                                            : ""}
+                                    </Text>
+                                </View>
+                            ))
+                        )}
+                    </View>
+                </ScrollView>
+
                 <View style={[home.cardButtonsView,{borderTopWidth:0, gap:7}]}>
                     <Pressable
                         onPress={() => addingItemsToCart(selectedItem.id)}
@@ -204,26 +242,59 @@ export default function CustomerHome({route}){
         max: 1000
     })
     const [cartItems, setCartItems]=useState({});
+    const [itemFeedback,setItemFeedback]=useState(null);
+    const [feedbackLoading,setFeedbackLoading]=useState(false);
+    const [feedbackError,setFeedbackError]=useState("");
+    const [notifications, setNotifications]=useState([]);
+    const [unreadCount, setUnreadCount]=useState(0);
+    const [showNotifications, setShowNotifications]=useState(false);
+    const [notificationsLoading, setNotificationsLoading]=useState(false);
+    const [notificationsError, setNotificationsError]=useState("");
     const loggedInUserData = route.params?.userData;
     const token = loggedInUserData?.access_token;
 
     
     const navigation = useNavigation();
-    
 
-    useEffect(()=>{
-        async function getFoodList(){
-            try{
-                const response = await fetch(`https://canteen-backend-xzko.onrender.com/menu`);
-                const data = await response.json();
-                setFoodList(data);
+    const loadNotifications = useCallback(async () => {
+        if (!token) return;
 
-            }catch(error){
-                console.log(error);
+        setNotificationsLoading(true);
+        setNotificationsError("");
+        try {
+            const response = await fetch(
+                "https://canteen-backend-xzko.onrender.com/notifications",
+                { headers: { Authorization: `Bearer ${token}` } },
+            );
+            const data = await response.json();
+            if (!response.ok) {
+                setNotificationsError(data.detail || "Could not load notifications.");
+                return;
             }
+            setNotifications(data.notifications || []);
+            setUnreadCount(data.unread_count || 0);
+        } catch (error) {
+            console.error("Error loading notifications:", error);
+            setNotificationsError("Unable to connect to the server.");
+        } finally {
+            setNotificationsLoading(false);
         }
-        getFoodList();
-    },[]);
+    }, [token]);
+
+
+    const loadFoodList = useCallback(async () => {
+        try {
+            const response = await fetch("https://canteen-backend-xzko.onrender.com/menu");
+            if (!response.ok) {
+                console.error("Failed to fetch menu:", response.status);
+                return;
+            }
+            const data = await response.json();
+            setFoodList(data);
+        } catch (error) {
+            console.error("Error loading menu:", error);
+        }
+    }, []);
 
     useFocusEffect(useCallback(()=>{
 
@@ -242,7 +313,57 @@ export default function CustomerHome({route}){
             }
         }
         getCartList();
-    },[]))
+        loadFoodList();
+        loadNotifications();
+        const menuInterval = setInterval(loadFoodList, 15000);
+        const notificationInterval = setInterval(loadNotifications, 30000);
+        return () => {
+            clearInterval(menuInterval);
+            clearInterval(notificationInterval);
+        };
+    },[loadFoodList, loadNotifications, token]))
+
+    async function markNotificationRead(notification) {
+        if (notification.read) return;
+
+        try {
+            const response = await fetch(
+                `https://canteen-backend-xzko.onrender.com/notifications/${notification.id}/read`,
+                {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` },
+                },
+            );
+            if (!response.ok) return;
+            setNotifications((current) =>
+                current.map((item) =>
+                    item.id === notification.id ? { ...item, read: true } : item,
+                ),
+            );
+            setUnreadCount((current) => Math.max(0, current - 1));
+        } catch (error) {
+            console.error("Error marking notification as read:", error);
+        }
+    }
+
+    async function markAllNotificationsRead() {
+        try {
+            const response = await fetch(
+                "https://canteen-backend-xzko.onrender.com/notifications/read-all",
+                {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` },
+                },
+            );
+            if (!response.ok) return;
+            setNotifications((current) =>
+                current.map((notification) => ({ ...notification, read: true })),
+            );
+            setUnreadCount(0);
+        } catch (error) {
+            console.error("Error marking notifications as read:", error);
+        }
+    }
 
 
     let categories=[];
@@ -253,8 +374,27 @@ export default function CustomerHome({route}){
 
     });
 
-    function handleItemSelect(item){
-        setSelectedItem(item)
+    async function handleItemSelect(item){
+        setSelectedItem(item);
+        setItemFeedback(null);
+        setFeedbackError("");
+        setFeedbackLoading(true);
+        try {
+            const response = await fetch(
+                `https://canteen-backend-xzko.onrender.com/items/${item.id}/feedback`,
+            );
+            const data = await response.json();
+            if (!response.ok) {
+                setFeedbackError(data.detail || "Could not load feedback.");
+                return;
+            }
+            setItemFeedback(data);
+        } catch (error) {
+            console.error("Error loading item feedback:", error);
+            setFeedbackError("Unable to connect to the server.");
+        } finally {
+            setFeedbackLoading(false);
+        }
     }
 
     function handleDetailsCardVisibility(){
@@ -387,6 +527,9 @@ async function removingItemsFromCart(id) {
                 />}
                 {showMoreDetailsCard && <MoreDetailsCard 
                     selectedItem={selectedItem} 
+                    itemFeedback={itemFeedback}
+                    feedbackLoading={feedbackLoading}
+                    feedbackError={feedbackError}
                     handleDetailsCardVisibility={handleDetailsCardVisibility}
                     addingItemsToCart={addingItemsToCart}
                     removingItemsFromCart={removingItemsFromCart}
@@ -394,9 +537,24 @@ async function removingItemsFromCart(id) {
                 <View style={home.nonScrollable}> 
                     <View style={styles.appBar}>
                         <Text>Welcome {loggedInUserData?.username}!</Text>
-                        <Pressable style={home.goToCartBtn} onPress={()=>navigation.navigate('Cart', {userData: loggedInUserData})}>
-                            <Ionicons name="cart" size={24} color="#111111" />
-                        </Pressable>
+                        <View style={home.appBarActions}>
+                            <Pressable
+                                style={home.goToCartBtn}
+                                onPress={() => setShowNotifications(true)}
+                            >
+                                <Ionicons name="notifications" size={24} color="#111111" />
+                                {unreadCount > 0 && (
+                                    <View style={home.notificationBadge}>
+                                        <Text style={home.notificationBadgeText}>
+                                            {unreadCount > 99 ? "99+" : unreadCount}
+                                        </Text>
+                                    </View>
+                                )}
+                            </Pressable>
+                            <Pressable style={home.goToCartBtn} onPress={()=>navigation.navigate('Cart', {userData: loggedInUserData})}>
+                                <Ionicons name="cart" size={24} color="#111111" />
+                            </Pressable>
+                        </View>
                     </View>
                     <View style={home.searchAndFilter}>
                         <TextInput
@@ -431,6 +589,65 @@ async function removingItemsFromCart(id) {
                         }
                     })}
                 </ScrollView>
+                {showNotifications && (
+                    <View style={home.overlay}>
+                        <Pressable
+                            style={StyleSheet.absoluteFill}
+                            onPress={() => setShowNotifications(false)}
+                        />
+                        <View style={home.notificationPanel}>
+                            <View style={home.notificationHeader}>
+                                <Text style={home.notificationTitle}>Notifications</Text>
+                                <Pressable onPress={() => setShowNotifications(false)}>
+                                    <Ionicons name="close" size={26} color="#111111" />
+                                </Pressable>
+                            </View>
+                            {unreadCount > 0 && (
+                                <Pressable
+                                    style={home.markAllReadButton}
+                                    onPress={markAllNotificationsRead}
+                                >
+                                    <Text style={home.markAllReadText}>Mark all as read</Text>
+                                </Pressable>
+                            )}
+                            {notificationsLoading && notifications.length === 0 ? (
+                                <Text style={home.notificationMessage}>Loading...</Text>
+                            ) : notificationsError ? (
+                                <Text style={home.notificationMessage}>{notificationsError}</Text>
+                            ) : notifications.length === 0 ? (
+                                <Text style={home.notificationMessage}>No notifications yet.</Text>
+                            ) : (
+                                <ScrollView style={home.notificationList}>
+                                    {notifications.map((notification) => (
+                                        <Pressable
+                                            key={notification.id}
+                                            style={[
+                                                home.notificationItem,
+                                                !notification.read && home.unreadNotificationItem,
+                                            ]}
+                                            onPress={() => markNotificationRead(notification)}
+                                        >
+                                            <View style={home.notificationItemHeader}>
+                                                <Text style={home.notificationType}>
+                                                    {notification.type.replaceAll("_", " ")}
+                                                </Text>
+                                                {!notification.read && (
+                                                    <View style={home.unreadDot} />
+                                                )}
+                                            </View>
+                                            <Text>{notification.message}</Text>
+                                            <Text style={home.notificationDate}>
+                                                {notification.created_at
+                                                    ? new Date(notification.created_at).toLocaleString()
+                                                    : ""}
+                                            </Text>
+                                        </Pressable>
+                                    ))}
+                                </ScrollView>
+                            )}
+                        </View>
+                    </View>
+                )}
             </View>            
         </SafeAreaView>
     );

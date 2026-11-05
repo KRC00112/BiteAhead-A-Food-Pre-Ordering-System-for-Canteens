@@ -94,6 +94,12 @@ export default function Login(){
                 <Text style={styles.accountAvailabilityMessage}>
                     Don't have an account? <Text style={styles.link} onPress={() =>navigation.navigate('Register')}>Register here!</Text>
                 </Text>
+                <Text style={styles.accountAvailabilityMessage}>
+                    Forgot your password?{" "}
+                    <Text style={styles.link} onPress={() => navigation.navigate('ForgotPassword')}>
+                        Reset it here
+                    </Text>
+                </Text>
 
             </View>
 

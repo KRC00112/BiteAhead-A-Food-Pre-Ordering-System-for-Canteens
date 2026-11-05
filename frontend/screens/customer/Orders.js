@@ -7,7 +7,8 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import orderStyles from "../../styles/screens/orders";
 import styles from "../../styles";
@@ -181,8 +182,7 @@ export default function Orders({ route }) {
     }
   }
 
-  useEffect(() => {
-    async function fetchOrders() {
+  const loadOrders = useCallback(async () => {
       try {
         const response = await fetch("https://canteen-backend-xzko.onrender.com/orders", {
           headers: { Authorization: `Bearer ${token}` },
@@ -228,10 +228,15 @@ export default function Orders({ route }) {
       } catch (error) {
         console.error("Error fetching orders:", error);
       }
-    }
-
-    fetchOrders();
   }, [token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadOrders();
+      const ordersInterval = setInterval(loadOrders, 10000);
+      return () => clearInterval(ordersInterval);
+    }, [loadOrders]),
+  );
 
   return (
     <SafeAreaView style={orderStyles.container} edges={["top", "left", "right"]}>
