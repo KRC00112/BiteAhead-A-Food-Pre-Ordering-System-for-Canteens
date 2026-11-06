@@ -12,6 +12,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import orderStyles from "../../styles/screens/orders";
 import styles from "../../styles";
+import SearchBar from "../../components/SearchBar";
 
 const STATUS_COLORS = {
   pending: "#FFD966",
@@ -28,6 +29,7 @@ function paymentMethodLabel(paymentMethod) {
 export default function Orders({ route }) {
   const token = route?.params?.userData?.access_token;
   const [orders, setOrders] = useState([]);
+  const [search, setSearch] = useState("");
   const [feedbackOrder, setFeedbackOrder] = useState(null);
   const [feedbackItems, setFeedbackItems] = useState([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
@@ -242,12 +244,13 @@ export default function Orders({ route }) {
     <SafeAreaView style={orderStyles.container} edges={["top", "left", "right"]}>
       <View style={styles.defaultView}>
         <Text style={orderStyles.heading}>My Orders</Text>
+        <SearchBar value={search} onChangeText={setSearch} placeholder="Search orders..." />
         <ScrollView>
-          {orders.length === 0 && (
+          {orders.filter(item => `${item.order_id} ${item.status} ${item.payment_method}`.toLowerCase().includes(search.trim().toLowerCase())).length === 0 && (
             <Text style={orderStyles.empty}>No orders yet</Text>
           )}
 
-          {orders.map((item) => (
+          {orders.filter(item => `${item.order_id} ${item.status} ${item.payment_method}`.toLowerCase().includes(search.trim().toLowerCase())).map((item) => (
             <View key={item.order_id} style={orderStyles.card}>
               <View style={orderStyles.cardHeader}>
                 <Text style={orderStyles.orderId}>#{item.order_id}</Text>

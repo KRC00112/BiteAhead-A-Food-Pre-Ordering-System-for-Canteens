@@ -20,55 +20,49 @@ export default function Register(){
 
     async function sendData(){
         try{
-            let response;
-            if(selectedRole==='STUDENT'){
-
-                response=await fetch(`https://canteen-backend-xzko.onrender.com/auth/student/register`,{
-                    method: 'POST',
-                    headers:{
-                        'Content-Type': 'application/json'
-                    },
-                    body:JSON.stringify({ 
-                        institute_id: instituteID,
-                        username: username,
-                        password: password,
-                        confirm_password: confirmPassword,
-                        email: email.trim() || null,
-                    }),
-                });
-
-            }else if(selectedRole==='FACULTY'){
-
-                response=await fetch(`https://canteen-backend-xzko.onrender.com/auth/faculty/register`,{
-                    method: 'POST',
-                    headers:{
-                        'Content-Type': 'application/json'
-                    },
-                    body:JSON.stringify({ 
-                        institute_id: instituteID,
-                        username: username,
-                        password: password,
-                        confirm_password: confirmPassword,
-                        email: email.trim() || null,
-                    }),
-                });
-
-            } else {
-                Alert.alert('Registration Failed', 'Select Student or Faculty as your role.');
-                return;
-            }
-           
-
-            if(!response.ok){
-                const error = await response.json();
-                Alert.alert('Registration Failed', error.detail || "Could not create your account.");
+            const endpointByRole = {
+                STUDENT: 'student',
+                FACULTY: 'faculty',
+                CANTEEN_STAFF: 'staff',
+            };
+            const endpoint = endpointByRole[selectedRole];
+            if (!endpoint) {
+                Alert.alert('Registration Failed', 'Select Student, Faculty, or Staff as your role.');
                 return;
             }
 
-            const data = await response.json();
+            const response = await fetch(`https://canteen-backend-xzko.onrender.com/auth/${endpoint}/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    institute_id: instituteID.trim(),
+                    username: username.trim(),
+                    password,
+                    confirm_password: confirmPassword,
+                    email: email.trim() || null,
+                }),
+            });
+            const responseText = await response.text();
+            let data;
+            try {
+                data = responseText ? JSON.parse(responseText) : {};
+            } catch {
+                data = {};
+            }
+
+            if (!response.ok) {
+                const detail = Array.isArray(data.detail)
+                    ? data.detail.map(item => item.msg).join('\n')
+                    : data.detail;
+                Alert.alert('Registration Failed', detail || `Server error (${response.status}).`);
+                return;
+            }
+
             console.log(JSON.stringify(data));
             Alert.alert(
-                'Success', 'Your account has been created!', [
+                'Success', data.message || 'Your account has been created!', [
                     {
                         text: 'Go to Login',
                         onPress:()=>navigation.navigate('Login')
@@ -129,6 +123,7 @@ export default function Register(){
                             {[
                                 ["STUDENT", "Student"],
                                 ["FACULTY", "Faculty"],
+                                ["CANTEEN_STAFF", "Staff"],
                             ].map(([value, label]) => (
                                 <Pressable
                                     key={value}

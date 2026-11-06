@@ -6,6 +6,7 @@ import home from "../../../styles/screens/home"
 import {useEffect, useState} from "react";
 import { ScrollView } from "react-native";
 import { AdminUserCard } from "../../../components/AdminDataCard";
+import SearchBar from "../../../components/SearchBar";
 
 
 export default function FacultyList({route}){
@@ -13,6 +14,7 @@ export default function FacultyList({route}){
     const loggedInUserData = route?.params?.userData;
     const token = loggedInUserData?.access_token;
     const [facultyList, setFacultyList]=useState([]);
+    const [search, setSearch]=useState("");
 
     useEffect(() => {
         async function getUsersList() {
@@ -35,7 +37,8 @@ export default function FacultyList({route}){
         <SafeAreaView style={home.container} edges={['top', 'left', 'right']}>
             <View style={styles.defaultView}>
                 <ScrollView>
-                    {facultyList?.map(member=>{
+                    <SearchBar value={search} onChangeText={setSearch} placeholder="Search faculty..." />
+                    {facultyList?.filter(member => `${member.username} ${member.institute_id}`.toLowerCase().includes(search.trim().toLowerCase())).map(member=>{
                         return(
                             <AdminUserCard key={member.id} user={member} />
                            

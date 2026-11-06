@@ -4,6 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import styles from "../../styles";
 import feedbackStyles from "../../styles/screens/staffFeedback";
+import SearchBar from "../../components/SearchBar";
 
 const API_URL = "https://canteen-backend-xzko.onrender.com";
 
@@ -99,6 +100,7 @@ export default function StaffFeedback({ route }) {
   const [error, setError] = useState("");
   const [expandedDays, setExpandedDays] = useState(new Set());
   const [expandedOrders, setExpandedOrders] = useState(new Set());
+  const [search, setSearch] = useState("");
 
   const groupedFeedback = useMemo(() => {
     const byDay = new Map();
@@ -111,6 +113,19 @@ export default function StaffFeedback({ route }) {
     });
     return [...byDay.entries()].sort(([a], [b]) => b.localeCompare(a));
   }, [feedback]);
+
+  const filteredFeedback = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return groupedFeedback;
+    return groupedFeedback.map(([day, orders]) => [
+      day,
+      new Map([...orders.entries()].filter(([orderId, entries]) =>
+        `${orderId} ${entries.map(entry => `${entry.food} ${entry.customer} ${entry.institute_id} ${entry.description || ""}`).join(" ")}`
+          .toLowerCase()
+          .includes(query)
+      )),
+    ]).filter(([, orders]) => orders.size > 0);
+  }, [groupedFeedback, search]);
 
   const loadFeedback = useCallback(async () => {
     setLoading(true);
@@ -161,15 +176,16 @@ export default function StaffFeedback({ route }) {
     <SafeAreaView style={feedbackStyles.container} edges={["top", "left", "right"]}>
       <View style={styles.defaultView}>
         <Text style={feedbackStyles.heading}>User Feedback</Text>
+        <SearchBar value={search} onChangeText={setSearch} placeholder="Search feedback, food, or customer..." />
         {loading ? (
           <ActivityIndicator size="large" color="#111111" />
         ) : error ? (
           <Text style={feedbackStyles.message}>{error}</Text>
-        ) : groupedFeedback.length === 0 ? (
+        ) : filteredFeedback.length === 0 ? (
           <Text style={feedbackStyles.message}>No feedback yet.</Text>
         ) : (
           <ScrollView>
-            {groupedFeedback.map(([day, orders]) => (
+            {filteredFeedback.map(([day, orders]) => (
               <DaySection
                 key={day}
                 day={day}
