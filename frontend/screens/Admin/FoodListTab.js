@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import styles from '../../styles';
 import home from '../../styles/screens/home';
 import { AdminFoodCard } from '../../components/AdminDataCard';
+import SearchBar from '../../components/SearchBar';
 
 const API_URL = 'https://canteen-backend-xzko.onrender.com';
 
@@ -138,6 +139,7 @@ function FoodItemForm({ item, token, onSaved, onClose }) {
 export default function FoodItems({ route }) {
   const token = route?.params?.userData?.access_token;
   const [foodList, setFoodList] = useState([]);
+  const [search, setSearch] = useState('');
   const [formItem, setFormItem] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -219,7 +221,8 @@ export default function FoodItems({ route }) {
           <Text style={{ fontWeight: '900' }}>Add New Food Item</Text>
         </Pressable>
         <ScrollView>
-          {foodList.map(item => (
+          <SearchBar value={search} onChangeText={setSearch} placeholder="Search food or category..." />
+          {foodList.filter(item => `${item.name} ${item.category} ${item.food_type}`.toLowerCase().includes(search.trim().toLowerCase())).map(item => (
             <AdminFoodCard key={item.id} item={item} onEdit={openEditForm} onDelete={deleteItem} />
           ))}
         </ScrollView>

@@ -2,6 +2,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import SearchBar from '../../components/SearchBar';
 
 const API_URL = 'https://canteen-backend-xzko.onrender.com';
 
@@ -86,6 +87,7 @@ function InventoryCard({ item, token, onSaved }) {
 export default function StaffInventory({ route }) {
   const token = route?.params?.userData?.access_token;
   const [inventory, setInventory] = useState([]);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
 
   const loadInventory = useCallback(async () => {
@@ -124,8 +126,9 @@ export default function StaffInventory({ route }) {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Inventory</Text>
         <Text style={styles.subtitle}>Update stock and availability for each food item.</Text>
+        <SearchBar value={search} onChangeText={setSearch} placeholder="Search inventory..." />
         {loading && <Text style={styles.message}>Loading inventory...</Text>}
-        {!loading && inventory.map(item => (
+        {!loading && inventory.filter(item => `${item.food} ${item.category} ${item.food_type}`.toLowerCase().includes(search.trim().toLowerCase())).map(item => (
           <InventoryCard key={item.food_id} item={item} token={token} onSaved={updateItem} />
         ))}
         {!loading && inventory.length === 0 && (

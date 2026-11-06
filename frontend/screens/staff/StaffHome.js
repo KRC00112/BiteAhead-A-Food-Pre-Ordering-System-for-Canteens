@@ -7,6 +7,7 @@ import styles from "../../styles";
 import { createContext, useCallback, useContext, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { ScrollView } from "react-native";
+import SearchBar from "../../components/SearchBar";
 
 const Tab = createBottomTabNavigator();
 const StaffOrdersContext = createContext([]);
@@ -263,13 +264,15 @@ function StaffOrdersProvider({ userData, children }) {
 
 function OrdersByStatus({ route, userData }) {
     const { ordersList } = useContext(StaffOrdersContext);
+    const [search, setSearch] = useState("");
     const visibleOrders = ordersList.filter(
         item => item.status?.toUpperCase() === route.name.toUpperCase()
-    );
+    ).filter(item => `${item.order_id} ${item.customer} ${item.institute_id}`.toLowerCase().includes(search.trim().toLowerCase()));
 
     return (
         <SafeAreaView style={home.container} edges={["left", "right"]}>
             <View style={styles.defaultView}>
+                <SearchBar value={search} onChangeText={setSearch} placeholder="Search orders or customer..." />
                 <ScrollView>
                     {visibleOrders.map(item => (
                         <OrdersCard key={item.order_id} item={item} />
