@@ -123,6 +123,11 @@ const home = StyleSheet.create({
     color:'white',
     fontSize:30,
   },
+  detailsImage: {
+    width: '100%',
+    height: 180,
+    marginBottom: 8,
+  },
   veg: {
     backgroundColor: 'white',
     borderWidth: 2,

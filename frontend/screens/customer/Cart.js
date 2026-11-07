@@ -18,7 +18,11 @@ function CartItemCard({ item, addingItemsToCart, removingItemsFromCart }) {
                 </View>
             </View>
 
-            <Image source={require("../../assets/android-icon-background.png")} style={cart.itemImage} resizeMode="cover" />
+            <Image
+                source={item.image_url ? { uri: item.image_url } : require("../../assets/android-icon-background.png")}
+                style={cart.itemImage}
+                resizeMode="cover"
+            />
 
             <View style={cart.cardButtonsView}>
                 <View style={cart.quantityView}>

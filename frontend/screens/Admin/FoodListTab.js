@@ -1,7 +1,8 @@
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCallback, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import styles from '../../styles';
 import home from '../../styles/screens/home';
 import { AdminFoodCard } from '../../components/AdminDataCard';
@@ -17,6 +18,7 @@ const EMPTY_FORM = {
   food_type: 'VEG',
   ingredients: '',
   avg_cooking_time_minutes: '10',
+  image_url: '',
 };
 
 function FoodItemForm({ item, token, onSaved, onClose }) {
@@ -28,7 +30,10 @@ function FoodItemForm({ item, token, onSaved, onClose }) {
     food_type: item.food_type ?? 'VEG',
     ingredients: (item.ingredients ?? []).join(', '),
     avg_cooking_time_minutes: String(item.avg_cooking_time_minutes ?? 10),
+    image_url: item.image_url ?? '',
   } : EMPTY_FORM);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
   const [saving, setSaving] = useState(false);
 
   function updateField(field, value) {
@@ -41,6 +46,46 @@ function FoodItemForm({ item, token, onSaved, onClose }) {
     const minutes = Number(form.avg_cooking_time_minutes);
     if (!Number.isInteger(minutes) || minutes < 1 || minutes > 180) return 'Cooking time must be between 1 and 180 minutes.';
     return null;
+  }
+
+  async function chooseImage() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission needed', 'Allow photo access to choose a menu item image.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      setSelectedImage(result.assets[0]);
+      setImageRemoved(false);
+    }
+  }
+
+  async function uploadImage(foodId, image) {
+    const imageResponse = await fetch(image.uri);
+    if (!imageResponse.ok) {
+      throw new Error('The selected image could not be read from the device.');
+    }
+    const imageBlob = await imageResponse.blob();
+    const formData = new FormData();
+    formData.append('file', imageBlob, image.fileName || `food-${foodId}.jpg`);
+    const response = await fetch(`${API_URL}/admin/items/${foodId}/image`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) {
+      const detail = typeof result?.detail === 'string' ? result.detail : 'The image could not be uploaded.';
+      throw new Error(detail);
+    }
+    return result;
   }
 
   async function saveItem() {
@@ -78,7 +123,22 @@ function FoodItemForm({ item, token, onSaved, onClose }) {
         const detail = typeof result?.detail === 'string' ? result.detail : 'The food item could not be saved.';
         throw new Error(detail);
       }
-      onSaved(result);
+      let savedItem = result;
+      if (selectedImage) {
+        savedItem = await uploadImage(result.id, selectedImage);
+      } else if (item && imageRemoved && item.image_url) {
+        const imageResponse = await fetch(`${API_URL}/admin/items/${item.id}/image`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const imageResult = await imageResponse.json().catch(() => null);
+        if (!imageResponse.ok) {
+          const detail = typeof imageResult?.detail === 'string' ? imageResult.detail : 'The image could not be removed.';
+          throw new Error(detail);
+        }
+        savedItem = imageResult;
+      }
+      onSaved(savedItem);
     } catch (error) {
       Alert.alert('Unable to save item', error.message || 'Please try again.');
     } finally {
@@ -126,6 +186,32 @@ function FoodItemForm({ item, token, onSaved, onClose }) {
           <Text style={styles.formInputLabel}>Cooking time (minutes) *</Text>
           <TextInput value={form.avg_cooking_time_minutes} onChangeText={value => updateField('avg_cooking_time_minutes', value)} style={styles.inputText} placeholder="10" placeholderTextColor="#666666" keyboardType="number-pad" />
 
+          <Text style={styles.formInputLabel}>Menu image</Text>
+          {(selectedImage?.uri || (item?.image_url && !imageRemoved)) && (
+            <Image
+              source={{ uri: selectedImage?.uri || item.image_url }}
+              style={styles.adminImagePreview}
+              resizeMode="cover"
+            />
+          )}
+          <View style={styles.imageActions}>
+            <Pressable onPress={chooseImage} style={styles.imageActionButton}>
+              <Ionicons name="image-outline" size={18} color="#111111" />
+              <Text style={styles.imageActionText}>{selectedImage || item?.image_url ? 'Choose different image' : 'Choose image'}</Text>
+            </Pressable>
+            {(selectedImage || (item?.image_url && !imageRemoved)) && (
+              <Pressable
+                onPress={() => {
+                  setSelectedImage(null);
+                  setImageRemoved(true);
+                }}
+                style={styles.imageRemoveButton}
+              >
+                <Text style={styles.imageRemoveText}>Remove</Text>
+              </Pressable>
+            )}
+          </View>
+          <Text style={styles.formHint}>JPEG, PNG or WebP, up to 2 MB.</Text>
           <Text style={styles.formHint}>Stock and availability are managed by canteen staff.</Text>
           <Pressable onPress={saveItem} disabled={saving} style={[styles.button, saving && styles.buttonDisabled]}>
             <Text style={styles.buttonText}>{saving ? 'Saving...' : item ? 'Save changes' : 'Create item'}</Text>
