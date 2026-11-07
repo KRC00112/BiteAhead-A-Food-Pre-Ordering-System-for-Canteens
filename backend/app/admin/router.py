@@ -1,6 +1,6 @@
 from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.admin import service
@@ -14,6 +14,7 @@ from app.admin.service import (
     FoodItemUpdate,
 )
 from app.auth.security import require_role
+from app.config import MAX_IMAGE_UPLOAD_MB
 from app.database.database import get_db
 from app.database.models import ADMIN, User
 from app.items.schemas import FoodItemOut
@@ -138,9 +139,29 @@ def create_food_item(data: FoodItemCreate, admin: User = Depends(admin_only), db
 def update_food_item(
     food_id: int, data: FoodItemUpdate, admin: User = Depends(admin_only), db: Session = Depends(get_db)
 ):
-    """Edit an item: name, price, description, category, Veg/Non-Veg, ingredients, cooking time.
-    Only the fields sent are changed. Past orders keep the price they were placed at."""
+    """Edit an item: name, price, description, category, Veg/Non-Veg, ingredients, cooking time,
+    photo link. Only the fields sent are changed. Past orders keep the price they were placed at."""
     return service.update_food_item(db, food_id, data)
+
+
+@router.put("/items/{food_id}/image", response_model=FoodItemOut)
+def upload_food_image(
+    food_id: int,
+    file: UploadFile = File(..., description="JPEG, PNG or WebP photo (max 2 MB by default)"),
+    admin: User = Depends(admin_only),
+    db: Session = Depends(get_db),
+):
+    """Upload a photo for the item (multipart/form-data, field name "file"). It replaces the
+    current photo; the item's image_url then points at the new one."""
+    # One byte over the limit is enough to know it is too large.
+    data = file.file.read(int(MAX_IMAGE_UPLOAD_MB * 1024 * 1024) + 1)
+    return service.set_food_image(db, food_id, data)
+
+
+@router.delete("/items/{food_id}/image", response_model=FoodItemOut)
+def remove_food_image(food_id: int, admin: User = Depends(admin_only), db: Session = Depends(get_db)):
+    """Remove the item's photo; the app shows its placeholder instead."""
+    return service.remove_food_image(db, food_id)
 
 
 @router.delete("/items/{food_id}")

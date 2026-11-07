@@ -149,7 +149,7 @@ docker compose up --build
 | Roles | STUDENT, FACULTY, CANTEEN_STAFF, ADMIN |
 | Staff account | Institute ID `STAFF001` / `Staff@123` (more staff register at `/auth/staff/register` and need admin approval) |
 | Admin account | Institute ID `ADMIN001` / `Admin@123`: the one permanent main canteen admin (set `SEED_ADMIN_PASSWORD` to change). No registration; a unique index (`uq_users_single_admin`) stops the database from ever holding a second ADMIN |
-| Food items | Veg Biryani ₹80 (25), Masala Dosa ₹50 (30), Chicken Roll ₹70 (20, **Non-Veg**), Samosa ₹20 (50), Tea ₹15 (100), Coffee ₹25 (50). All others are Veg; each has ingredients and an average cooking time |
+| Food items | Veg Biryani ₹80 (25), Masala Dosa ₹50 (30), Chicken Roll ₹70 (20, **Non-Veg**), Samosa ₹20 (50), Tea ₹15 (100), Coffee ₹25 (50). All others are Veg; each has ingredients, an average cooking time and a photo |
 
 Students register via `/auth/student/register` (STUDENT role) and faculty via
 `/auth/faculty/register` (FACULTY role) and staff via `/auth/staff/register` (CANTEEN_STAFF role,
@@ -207,6 +207,7 @@ In Swagger, click **Authorize** and paste the token.
 | GET | `/users/me` | User | Profile |
 | GET | `/items` | – (token optional) | Food items; query params: `search`, `category_id`, `food_type` (`VEG` / `NON_VEG`), `min_price`, `max_price`, `available_only` |
 | GET | `/items/categories` | – | Categories, each with the food types it contains |
+| GET | `/items/{food_id}/image` | – | A photo the admin uploaded. Use the item's `image_url` instead of building this URL (see [Food photos](#food-photos)) |
 | GET | `/items/{food_id}` | – (token optional) | One food item. (`/menu`, `/menu/categories` and `/menu/{food_id}` still work for older app builds, but are hidden from the docs) |
 | GET | `/inventory/{food_id}` | – (token optional) | Availability + stock status (no exact count) |
 | GET | `/cart` | User | Cart with subtotal/total |
@@ -245,8 +246,10 @@ In Swagger, click **Authorize** and paste the token.
 | GET | `/admin/staff` | ADMIN | Staff accounts (`?status=PENDING` = waiting for approval) |
 | POST | `/admin/staff/{user_id}/approve` | ADMIN | Approve a pending staff account (or re-activate one) |
 | POST | `/admin/staff/{user_id}/deactivate` | ADMIN | Reject / block a staff account; their logins end immediately |
-| POST | `/admin/items` | ADMIN | Add a food item: `name`, `price`, `category` (new categories are created), optional `description`, `food_type`, `ingredients`, `avg_cooking_time_minutes`. It starts with 0 stock until staff restock it |
-| PATCH | `/admin/items/{food_id}` | ADMIN | Edit `name`, `price`, `description`, `category`, `food_type`, `ingredients`, `avg_cooking_time_minutes` (only the fields sent). Past orders keep their price |
+| POST | `/admin/items` | ADMIN | Add a food item: `name`, `price`, `category` (new categories are created), optional `description`, `food_type`, `ingredients`, `avg_cooking_time_minutes`, `image_url`. It starts with 0 stock until staff restock it |
+| PATCH | `/admin/items/{food_id}` | ADMIN | Edit `name`, `price`, `description`, `category`, `food_type`, `ingredients`, `avg_cooking_time_minutes`, `image_url` (only the fields sent). Past orders keep their price |
+| PUT | `/admin/items/{food_id}/image` | ADMIN | Upload the item's photo: `multipart/form-data`, field `file` (JPEG / PNG / WebP, max 2 MB). Replaces the current photo |
+| DELETE | `/admin/items/{food_id}/image` | ADMIN | Remove the item's photo (`image_url` becomes `null`) |
 | DELETE | `/admin/items/{food_id}` | ADMIN | Remove an item. Past orders still show it; it is taken out of carts (customers get an `ITEM_REMOVED` notification) |
 | GET | `/admin/reports/sales/overview` | ADMIN | This week, month, quarter and year: orders, revenue, collected / pending, cancellations, % change from the period before (`?date=`) |
 | GET | `/admin/reports/sales` | ADMIN | Full report for one period (`?period=weekly\|monthly\|quarterly\|yearly&date=YYYY-MM-DD`): see [Sales reports](#sales-reports) |
@@ -505,6 +508,48 @@ so the Neon database upgrades itself on the next deploy.
   `estimated_ready_minutes`, and an order returns `estimated_ready_at` / `estimated_ready_minutes`.
   Items are cooked in parallel, so the estimate is the slowest item's cooking time.
 
+## Food photos
+
+Every food item, cart item, order item and staff inventory row has `image_url`: a full URL the
+app can load directly, or `null` when the item has no photo yet (show a placeholder).
+
+```jsx
+<Image
+  source={item.image_url ? { uri: item.image_url } : require("../assets/food-placeholder.png")}
+  style={{ width: "100%", height: 200 }}
+  resizeMode="cover"
+/>
+```
+
+Where the photo comes from:
+
+- **Default photos** for Veg Biryani, Masala Dosa, Chicken Roll, Samosa, Tea, Coffee, Paneer Tikka Wrap,
+  Paneer Wrap, Chicken Fried Rice and Chowmein are bundled in `app/static/food` (800x600, ~80 KB each)
+  and served at `/static/food/...`. An item with one of these names gets its photo automatically when it
+  is added, and `seed.py` fills it in on every start for existing items that have no photo.
+  The photos are from Wikimedia Commons; `app/static/food/CREDITS.md` has the required credits.
+- **Uploaded by the admin** with `PUT /admin/items/{food_id}/image` (form field `file`). Uploads are
+  stored in the database (`food_images` table), because Render's disk is wiped on every deploy. The URL
+  ends in `?v=...`, which changes with every upload, so phones never show an older cached photo.
+- **A link** the admin pastes in: `image_url` on `POST /admin/items` or `PATCH /admin/items/{food_id}`
+  (`http://` or `https://`; `null` or `""` removes the photo). Sending back the `image_url` the API gave
+  you leaves the photo unchanged, so an edit form can send the whole item.
+
+Uploading from the admin app (Expo): pick a photo with `expo-image-picker`, then
+
+```js
+const form = new FormData();
+form.append("file", { uri: asset.uri, name: "photo.jpg", type: asset.mimeType ?? "image/jpeg" });
+await fetch(`${API_URL}/admin/items/${item.id}/image`, {
+  method: "PUT",
+  headers: { Authorization: `Bearer ${token}` },  // no Content-Type: fetch sets the boundary
+  body: form,
+});
+```
+
+Settings (env vars): `MAX_IMAGE_UPLOAD_MB` (default 2), `PUBLIC_BASE_URL` (only if the URLs in
+responses should use a different address than the one the app called).
+
 ## Scarce, high-demand items (e.g. 1 portion left, many buyers)
 
 Without protection, everyone sees the last portion as available, adds it to their cart,
@@ -548,6 +593,7 @@ Settings (env vars): `CART_HOLD_MINUTES`, `LOW_STOCK_THRESHOLD`, `LOW_STOCK_MAX_
   disable "+1" when `in cart >= max_order_quantity`; a **Notify me** button instead of "+1" when
   `available` is false (`POST /notifications/stock-alerts`; the button shows as on when `notify_me` is true).
   Send the token on `GET /items` too, so the customer's own held items don't count as reserved.
+- **Photos:** show `image_url` on item cards, cart items and orders (placeholder when `null`); see [Food photos](#food-photos).
 - **View details:** show `ingredients` as a list and `description`.
 - **Filters panel:** item type → `food_type`; category → `category_id`; price limit → `min_price` / `max_price`.
 - **Cart:** under each item show `message` (red when `available` is false); show "Ready in ~N min"

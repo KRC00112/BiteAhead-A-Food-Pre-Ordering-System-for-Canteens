@@ -11,11 +11,14 @@ from app.database.models import (
     OrderEvent,
     OrderItem,
 )
+from app.items.images import public_url
 
 
 class OrderItemOut(BaseModel):
     food_id: int
     food: str
+    # Full URL of the food's photo; None = no photo yet (show a placeholder).
+    image_url: Optional[str] = None
     food_type: str
     quantity: int
     price: float
@@ -95,6 +98,7 @@ def order_item_out(oi: OrderItem) -> OrderItemOut:
     return OrderItemOut(
         food_id=oi.food_item_id,
         food=oi.food_item.name,
+        image_url=public_url(oi.food_item.image_url),
         food_type=oi.food_item.food_type,
         quantity=oi.quantity,
         price=oi.price,

@@ -1,11 +1,11 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.auth.security import get_optional_user
 from app.database.database import get_db
-from app.database.models import User
+from app.database.models import FoodImage, User
 from app.items import service
 from app.items.schemas import CategoryOut, FoodItemOut, FoodType
 
@@ -39,6 +39,21 @@ def get_items(
 @legacy_router.get("/categories", response_model=List[CategoryOut])
 def get_categories(db: Session = Depends(get_db)):
     return service.list_categories(db)
+
+
+@router.get("/{food_id}/image", response_class=Response)
+def get_food_image(food_id: int, db: Session = Depends(get_db)):
+    """The photo the admin uploaded for this item. Use the item's image_url rather than
+    building this URL yourself: image_url also covers default photos and outside links."""
+    image = db.get(FoodImage, food_id)
+    if image is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This item has no uploaded photo")
+    # image_url carries a version (?v=...) that changes with every upload, so it can be cached for good.
+    return Response(
+        content=image.data,
+        media_type=image.content_type,
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )
 
 
 @router.get("/{food_id}", response_model=FoodItemOut)

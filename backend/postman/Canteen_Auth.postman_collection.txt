@@ -1225,7 +1225,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Items -> 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"items have food_type, ingredients, cooking time, stock status\", () => { const i = pm.response.json()[0]; [\"food_type\",\"is_veg\",\"ingredients\",\"avg_cooking_time_minutes\",\"stock_status\",\"stock_message\",\"max_order_quantity\"].forEach(k => pm.expect(i).to.have.property(k)); });"
+                  "pm.test(\"items have food_type, ingredients, cooking time, stock status\", () => { const i = pm.response.json()[0]; [\"food_type\",\"is_veg\",\"ingredients\",\"avg_cooking_time_minutes\",\"stock_status\",\"stock_message\",\"max_order_quantity\"].forEach(k => pm.expect(i).to.have.property(k)); });",
+                  "pm.test(\"items have image_url (full URL or null)\", () => pm.response.json().forEach(i => { pm.expect(i).to.have.property(\"image_url\"); if (i.image_url) pm.expect(i.image_url).to.match(/^https?:\\/\\//); }));"
                 ]
               }
             }
@@ -5955,6 +5956,462 @@
           ]
         }
       ]
+    },
+    {
+      "name": "19. Food photos (admin token)",
+      "item": [
+        {
+          "name": "Admin login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/admin/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "admin",
+                "login"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"institute_id\": \"ADMIN001\",\n  \"password\": \"Admin@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Admin login OK -> 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"role is ADMIN\", () => pm.expect(j.role).to.eql(\"ADMIN\"));",
+                  "pm.collectionVariables.set(\"admin_token\", j.access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Items with photos (pick one to test)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "items"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OK -> 200\", () => pm.response.to.have.status(200));",
+                  "const items = pm.response.json();",
+                  "const item = items.find(i => i.image_url) || items[0];",
+                  "pm.collectionVariables.set(\"photo_food_id\", item.id);",
+                  "// Put the item's photo back at the end of this folder.",
+                  "pm.collectionVariables.set(\"photo_original_url\", item.image_url || \"\");",
+                  "pm.test(\"most items have a photo\", () => pm.expect(items.filter(i => i.image_url).length).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Load the item's default photo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{photo_original_url}}"
+            },
+            "description": "Loads the image_url exactly as the app does with <Image source={{ uri: item.image_url }} />.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OK -> 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"is an image\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.match(/^image\\//));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set a photo link",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/items/{{photo_food_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "items",
+                "{{photo_food_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image_url\": \"https://upload.wikimedia.org/wikipedia/commons/c/cb/Samosa_4.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OK -> 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"image_url is the link\", () => pm.expect(pm.response.json().image_url).to.eql(\"https://upload.wikimedia.org/wikipedia/commons/c/cb/Samosa_4.jpg\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Not an http(s) link (422)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/items/{{photo_food_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "items",
+                "{{photo_food_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image_url\": \"file:///sdcard/samosa.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Bad link -> 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload a photo (choose a file)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/items/{{photo_food_id}}/image",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "items",
+                "{{photo_food_id}}",
+                "image"
+              ]
+            },
+            "description": "Body -> form-data -> choose a JPEG, PNG or WebP (max 2 MB) for the \"file\" key before sending.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Uploaded -> 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"image_url points at the uploaded photo\", () => pm.expect(j.image_url).to.include(`/items/${j.id}/image?v=`));",
+                  "pm.collectionVariables.set(\"uploaded_photo_url\", j.image_url);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Load the uploaded photo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{uploaded_photo_url}}"
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OK -> 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"is an image\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.match(/^image\\//));",
+                  "pm.test(\"cached by phones\", () => pm.expect(pm.response.headers.get(\"Cache-Control\")).to.include(\"max-age\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Staff can't upload photos (403)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/items/{{photo_food_id}}/image",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "items",
+                "{{photo_food_id}}",
+                "image"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staff_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Staff -> 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Remove the photo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/items/{{photo_food_id}}/image",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "items",
+                "{{photo_food_id}}",
+                "image"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OK -> 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"image_url is null\", () => pm.expect(pm.response.json().image_url).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Put the original photo back",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/items/{{photo_food_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "items",
+                "{{photo_food_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image_url\": \"{{photo_original_url}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OK -> 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"original photo is back\", () => pm.expect(pm.response.json().image_url || \"\").to.eql(pm.collectionVariables.get(\"photo_original_url\")));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
@@ -6004,6 +6461,18 @@
     },
     {
       "key": "feedback_pickup_code",
+      "value": ""
+    },
+    {
+      "key": "photo_food_id",
+      "value": ""
+    },
+    {
+      "key": "photo_original_url",
+      "value": ""
+    },
+    {
+      "key": "uploaded_photo_url",
       "value": ""
     }
   ]

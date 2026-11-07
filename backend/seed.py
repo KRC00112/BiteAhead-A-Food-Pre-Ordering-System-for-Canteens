@@ -1,5 +1,7 @@
 """Seed the database with roles, a staff account, an admin account and food items.
 
+Food items without a photo get their default one (app/static/food) if there is one for their name.
+
 Safe to run multiple times: existing rows are left unchanged.
 
     python seed.py
@@ -18,6 +20,7 @@ from app.config import (
     SEED_STAFF_USERNAME,
 )
 from app.database.database import SessionLocal, init_db
+from app.items.images import default_image_for
 from app.database.models import (
     ACCOUNT_ACTIVE,
     ADMIN,
@@ -107,6 +110,7 @@ def seed():
                     "description": description,
                     "category_id": cat.id,
                     "price": Decimal(price),
+                    "image_url": default_image_for(name),
                     **details,
                 },
             )
@@ -121,8 +125,14 @@ def seed():
                 defaults={"quantity": quantity, "availability": quantity > 0},
             )
 
+        # Every item still without a photo (including ones the admin added) gets its default, if any.
+        photos_added = 0
+        for food in db.scalars(select(FoodItem).where(FoodItem.image_url.is_(None))).unique():
+            food.image_url = default_image_for(food.name)
+            photos_added += food.image_url is not None
+
         db.commit()
-        print("Seed complete.")
+        print("Seed complete." + (f" Added default photos to {photos_added} food items." if photos_added else ""))
         print(f"  Staff login: Institute ID {SEED_STAFF_INSTITUTE_ID} / {SEED_STAFF_PASSWORD}")
         print(f"  Admin login: Institute ID {SEED_ADMIN_INSTITUTE_ID} / {SEED_ADMIN_PASSWORD}")
     finally:

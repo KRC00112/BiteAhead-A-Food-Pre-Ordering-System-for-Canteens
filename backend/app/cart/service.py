@@ -12,6 +12,7 @@ from app.config import CART_HOLD_MINUTES
 from app.database.models import VEG, Cart, CartItem, User
 from app.inventory import service as inventory_service
 from app.items import service as items_service
+from app.items.images import public_url
 
 
 # ---------- Schemas ----------
@@ -29,6 +30,8 @@ class CartItemOut(BaseModel):
     item_id: int
     food_id: int
     food: str
+    # Full URL of the food's photo; None = no photo yet (show a placeholder).
+    image_url: Optional[str] = None
     food_type: str
     is_veg: bool
     avg_cooking_time_minutes: int
@@ -96,6 +99,7 @@ def to_cart_out(db: Session, cart: Cart) -> CartOut:
                 item_id=ci.id,
                 food_id=food.id,
                 food=food.name,
+                image_url=public_url(food.image_url),
                 food_type=food.food_type,
                 is_veg=food.food_type == VEG,
                 avg_cooking_time_minutes=food.avg_cooking_time_minutes,
