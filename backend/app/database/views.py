@@ -139,6 +139,7 @@ VIEWS = {
             f.price,
             f.avg_cooking_time_minutes,
             f.ingredients,
+            f.image_url,
             i.quantity                   AS stock,
             i.availability               AS available
         FROM food_items f

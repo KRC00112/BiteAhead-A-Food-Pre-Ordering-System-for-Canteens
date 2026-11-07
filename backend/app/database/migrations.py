@@ -29,6 +29,7 @@ NEW_COLUMNS = [
     ("payments", "refund_id", ""),
     ("payments", "refunded_at", ""),
     ("notifications", "order_id", ""),
+    ("food_items", "image_url", ""),
 ]
 
 # Run once, right after the column is added, to fill it in for existing rows.
