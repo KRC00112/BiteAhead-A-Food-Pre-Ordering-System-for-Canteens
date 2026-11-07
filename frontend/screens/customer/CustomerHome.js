@@ -41,7 +41,7 @@ function ItemListCard({item, addingItemsToCart, removingItemsFromCart, cartItems
                 </View>            
             </View>
             <Image 
-                source={require("../../assets/android-icon-background.png")}
+                source={item.image_url ? { uri: item.image_url } : require("../../assets/android-icon-background.png")}
                 style={{ width: '100%', height: 200, overflow:'hidden'}}
                 resizeMode="cover"
             />
@@ -86,6 +86,11 @@ function MoreDetailsCard({
             />
             <View style={[home.popupForm, home.detailsCard]}>
                 <ScrollView style={home.detailsScroll} contentContainerStyle={home.detailsContent}>
+                    <Image
+                        source={selectedItem.image_url ? { uri: selectedItem.image_url } : require("../../assets/android-icon-background.png")}
+                        style={home.detailsImage}
+                        resizeMode="cover"
+                    />
                     <Text style={home.detailsTitle}>{name}</Text>
                     <Text style={home.detailsPrice}>₹ {price}</Text>
                     {rating_count > 0 && (

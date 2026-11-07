@@ -230,6 +230,39 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 4,
   },
+  adminImagePreview: {
+    width: '100%',
+    height: 160,
+    borderWidth: 2,
+    borderColor: '#111111',
+  },
+  imageActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  imageActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#7DF9FF',
+    borderWidth: 2,
+    borderColor: '#111111',
+    padding: 10,
+  },
+  imageActionText: {
+    color: '#111111',
+    fontWeight: '600',
+  },
+  imageRemoveButton: {
+    borderWidth: 2,
+    borderColor: '#111111',
+    padding: 10,
+  },
+  imageRemoveText: {
+    color: '#111111',
+    fontWeight: '600',
+  },
   buttonDisabled: {
     opacity: 0.55,
   }
