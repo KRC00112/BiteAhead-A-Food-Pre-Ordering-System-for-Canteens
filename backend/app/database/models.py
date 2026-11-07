@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     Numeric,
     String,
     Text,
@@ -182,10 +183,29 @@ class FoodItem(Base):
     avg_cooking_time_minutes: Mapped[int] = mapped_column(Integer, nullable=False, server_default="10")
     # Set when the admin removes the item. It is kept (not deleted) so past orders still show it.
     removed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    # Photo shown in the app: a bundled default (/static/food/...), an uploaded photo
+    # (/items/<id>/image?v=..., stored in FoodImage) or an outside https:// link. See app/items/images.py.
+    image_url: Mapped[Optional[str]] = mapped_column(String(500))
 
     category: Mapped[Category] = relationship(back_populates="food_items", lazy="joined")
     inventory: Mapped[Optional["Inventory"]] = relationship(
         back_populates="food_item", uselist=False, lazy="joined"
+    )
+
+
+class FoodImage(Base):
+    """A photo the admin uploaded for a food item. Kept in the database because the
+    server's disk is wiped on every deploy."""
+
+    __tablename__ = "food_images"
+
+    food_item_id: Mapped[int] = mapped_column(
+        ForeignKey("food_items.id", ondelete="CASCADE"), primary_key=True
+    )
+    content_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
 

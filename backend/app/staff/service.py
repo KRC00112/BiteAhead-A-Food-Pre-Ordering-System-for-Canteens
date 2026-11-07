@@ -10,6 +10,7 @@ from app import activity
 from app.cart.service import CartOut, to_cart_out
 from app.database.models import Cart, FoodItem, Order
 from app.inventory import service as inventory_service
+from app.items.images import public_url
 from app.orders.schemas import OrderEventOut, OrderItemOut, order_event_out, order_item_out
 
 
@@ -81,6 +82,8 @@ def list_orders(db: Session, status: Optional[str] = None) -> List[StaffOrderOut
 class StaffInventoryOut(BaseModel):
     food_id: int
     food: str
+    # Full URL of the food's photo; None = no photo yet (show a placeholder).
+    image_url: Optional[str] = None
     category: str
     food_type: str
     quantity: int
@@ -111,6 +114,7 @@ def list_inventory(db: Session) -> List[StaffInventoryOut]:
             StaffInventoryOut(
                 food_id=food.id,
                 food=food.name,
+                image_url=public_url(food.image_url),
                 category=food.category.name,
                 food_type=food.food_type,
                 quantity=inv.quantity if inv else 0,

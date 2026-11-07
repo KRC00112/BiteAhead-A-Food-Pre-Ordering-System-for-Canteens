@@ -23,6 +23,12 @@ SEED_ADMIN_INSTITUTE_ID = os.getenv("SEED_ADMIN_INSTITUTE_ID", "ADMIN001")
 SEED_ADMIN_USERNAME = os.getenv("SEED_ADMIN_USERNAME", "canteen_admin")
 SEED_ADMIN_PASSWORD = os.getenv("SEED_ADMIN_PASSWORD", "Admin@123")
 
+# Food photos. Image URLs in API responses start with this address; when empty, the address
+# the request came in on is used (works on Render and locally).
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").strip()
+# Largest food photo the admin can upload. Photos are stored in the database, so keep them small.
+MAX_IMAGE_UPLOAD_MB = float(os.getenv("MAX_IMAGE_UPLOAD_MB", "2"))
+
 # Sales reports group orders by the canteen's local day, week, month, quarter and year.
 CANTEEN_TIMEZONE = os.getenv("CANTEEN_TIMEZONE", "Asia/Kolkata")
 

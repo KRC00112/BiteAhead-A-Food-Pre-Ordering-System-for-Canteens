@@ -20,6 +20,7 @@ from app.database.models import (
     NOTIFY_ITEM_REMOVED,
     CartItem,
     Category,
+    FoodImage,
     FoodItem,
     Inventory,
     Notification,
@@ -29,6 +30,7 @@ from app.database.models import (
     User,
     UserSession,
 )
+from app.items import images
 from app.items import service as items_service
 from app.items.schemas import FoodItemOut, FoodType
 from app.notifications.service import NotificationOut, StockAlertOut, to_out
@@ -94,6 +96,9 @@ class FoodItemCreate(BaseModel):
     food_type: FoodType = "VEG"
     ingredients: List[str] = Field(default_factory=list, examples=[["Paneer", "Wrap", "Onion"]])
     avg_cooking_time_minutes: int = Field(10, ge=1, le=180)
+    # Optional https:// link to a photo. Left out: a known dish (e.g. "Samosa") gets its default
+    # photo. To upload a photo from the phone instead, use PUT /admin/items/{food_id}/image.
+    image_url: Optional[str] = Field(None, max_length=500)
     # Stock is managed by staff: a new item starts at 0 (not available) until staff restock it
     # with PUT /staff/inventory/{food_id}.
 
@@ -108,6 +113,8 @@ class FoodItemUpdate(BaseModel):
     food_type: Optional[FoodType] = None
     ingredients: Optional[List[str]] = None
     avg_cooking_time_minutes: Optional[int] = Field(None, ge=1, le=180)
+    # https:// link to a photo, or null / "" to remove the photo.
+    image_url: Optional[str] = Field(None, max_length=500)
 
 
 class AdminUserDetail(UserWithLoginStatus):
@@ -321,6 +328,7 @@ def create_food_item(db: Session, data: FoodItemCreate) -> FoodItemOut:
         food_type=data.food_type,
         ingredients=[i.strip() for i in data.ingredients if i.strip()],
         avg_cooking_time_minutes=data.avg_cooking_time_minutes,
+        image_url=images.check_image_link(data.image_url) or images.default_image_for(name),
     )
     db.add(food)
     db.flush()
@@ -348,6 +356,12 @@ def update_food_item(db: Session, food_id: int, data: FoodItemUpdate) -> FoodIte
         changes["ingredients"] = [i.strip() for i in changes["ingredients"] or [] if i.strip()]
     if "description" in changes:
         changes["description"] = (changes["description"] or "").strip() or None
+    if "image_url" in changes:
+        changes["image_url"] = images.check_image_link(changes["image_url"])
+        if changes["image_url"] == food.image_url:
+            changes.pop("image_url")  # the app sent the current photo back unchanged
+        elif not (changes["image_url"] or "").startswith(f"/items/{food_id}/image"):
+            db.execute(delete(FoodImage).where(FoodImage.food_item_id == food_id))
     for field in ("name", "price", "food_type", "avg_cooking_time_minutes"):
         if field in changes and changes[field] is None:
             changes.pop(field)  # these columns can't be emptied
@@ -356,6 +370,31 @@ def update_food_item(db: Session, food_id: int, data: FoodItemUpdate) -> FoodIte
     db.commit()
     described += [f for f in changes if f != "price"]
     activity.event(f"Items: edited {food.name} ({', '.join(described) or 'no changes'})")
+    return items_service.get_food_out(db, food_id)
+
+
+def set_food_image(db: Session, food_id: int, data: bytes) -> FoodItemOut:
+    """Save an uploaded photo for the item, replacing its current one."""
+    food = items_service.get_food_item(db, food_id)
+    content_type = images.detect_image_type(data)
+    stored = db.get(FoodImage, food_id)
+    if stored is None:
+        db.add(FoodImage(food_item_id=food_id, content_type=content_type, data=data))
+    else:
+        stored.content_type, stored.data, stored.updated_at = content_type, data, utcnow()
+    food.image_url = images.uploaded_image_path(food_id, int(utcnow().timestamp()))
+    db.commit()
+    activity.event(f"Items: new photo for {food.name} ({len(data) // 1024} KB)")
+    return items_service.get_food_out(db, food_id)
+
+
+def remove_food_image(db: Session, food_id: int) -> FoodItemOut:
+    """Take the item's photo away; the app shows its placeholder instead."""
+    food = items_service.get_food_item(db, food_id)
+    db.execute(delete(FoodImage).where(FoodImage.food_item_id == food_id))
+    food.image_url = None
+    db.commit()
+    activity.event(f"Items: removed the photo of {food.name}")
     return items_service.get_food_out(db, food_id)
 
 
