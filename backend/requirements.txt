@@ -5,6 +5,8 @@ psycopg2-binary>=2.9
 pydantic>=2.5,<3.0
 python-dotenv>=1.0
 PyJWT>=2.8
+# File uploads (food photos)
+python-multipart>=0.0.9
 argon2-cffi>=23.1
 # Time zone data for CANTEEN_TIMEZONE (slim images have none)
 tzdata>=2024.1

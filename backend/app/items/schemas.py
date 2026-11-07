@@ -22,6 +22,8 @@ class FoodItemOut(BaseModel):
     is_veg: bool
     price: float
     ingredients: List[str]
+    # Full URL of the food's photo; None = no photo yet (show a placeholder).
+    image_url: Optional[str] = None
     avg_cooking_time_minutes: int
     available: bool
     # IN_STOCK | LOW_STOCK | HIGH_DEMAND | ALL_RESERVED | OUT_OF_STOCK

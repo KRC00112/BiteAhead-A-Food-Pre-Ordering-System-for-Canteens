@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.database.models import NON_VEG, VEG, Category, Feedback, FoodItem, StockAlert, User
 from app.inventory import service as inventory_service
 from app.inventory.service import Stock
+from app.items.images import public_url
 from app.items.schemas import CategoryOut, FoodItemOut
 
 
@@ -37,6 +38,7 @@ def to_food_out(
         is_veg=item.food_type == VEG,
         price=item.price,
         ingredients=item.ingredients or [],
+        image_url=public_url(item.image_url),
         avg_cooking_time_minutes=item.avg_cooking_time_minutes,
         available=stock.available,
         stock_status=stock.status,

@@ -25,6 +25,9 @@ IST = timezone(timedelta(hours=5, minutes=30))
 
 # Health checks (Render, UptimeRobot) and the live page's own polling would drown everything else.
 QUIET_PATHS = {"/", "/favicon.ico", "/openapi.json", "/admin/live", "/admin/live/feed"}
+# Food photos: every menu screen loads one per item.
+QUIET_PREFIXES = ("/static/",)
+QUIET_SUFFIXES = ("/image",)
 BUFFER_SIZE = 500
 
 log = logging.getLogger("canteen.activity")
@@ -92,7 +95,8 @@ def _format(e: dict) -> str:
 
 async def activity_middleware(request: Request, call_next):
     path = request.url.path
-    if path in QUIET_PATHS or request.method == "OPTIONS":
+    quiet_photo = path.startswith(QUIET_PREFIXES) or (request.method == "GET" and path.endswith(QUIET_SUFFIXES))
+    if path in QUIET_PATHS or quiet_photo or request.method == "OPTIONS":
         return await call_next(request)
 
     ctx = {"user": None, "role": None, "events": [], "error": None}
