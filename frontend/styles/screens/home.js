@@ -96,6 +96,23 @@ const home = StyleSheet.create({
       zIndex:2,
 
   },
+  unavailableDisplay: {
+    backgroundColor: 'white',
+    borderColor: 'black',
+    borderStyle: 'solid',
+    borderWidth: 2,
+    borderRadius: 2,
+    paddingInline: '3%',
+    boxShadow: '1px 2px rgba(0, 0, 0)',
+    position: 'absolute',
+    right: 10,
+    top: 48,
+    zIndex: 2,
+  },
+  unavailableLabel: {
+    color: '#C0392B',
+    fontWeight: '900',
+  },
   itemOverview:{
     marginTop:5,
     position:'absolute',

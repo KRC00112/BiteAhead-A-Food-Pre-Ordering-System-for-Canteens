@@ -30,6 +30,11 @@ function ItemListCard({item, addingItemsToCart, removingItemsFromCart, cartItems
             <View style={home.cardCountDisplay}>
                 <Text>In cart: {showCartCount(item.id)}</Text>
             </View>
+            {!item.available && (
+                <View style={home.unavailableDisplay}>
+                    <Text style={home.unavailableLabel}>Unavailable</Text>
+                </View>
+            )}
 
             <View style={home.itemOverview}>
                 <Text style={home.itemName}>{item.name}</Text>

@@ -2,9 +2,11 @@ import { Pressable, Text, View, Alert } from 'react-native';
 import register from '../styles/screens/register';
 import styles from '../styles'
 import { TextInput } from 'react-native';
+import PasswordInput from '../components/PasswordInput';
 import {useNavigation} from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
+import { getAuthErrorMessage } from '../components/authMessages';
 
 export default function Register(){
     const navigation = useNavigation();
@@ -30,6 +32,30 @@ export default function Register(){
                 Alert.alert('Registration Failed', 'Select Student, Faculty, or Staff as your role.');
                 return;
             }
+            if (!instituteID.trim()) {
+                Alert.alert('Institute ID required', 'Enter your Institute ID.');
+                return;
+            }
+            if (!/^[A-Za-z0-9_-]+$/.test(instituteID.trim())) {
+                Alert.alert('Invalid Institute ID', 'Use only letters, numbers, underscores, and hyphens.');
+                return;
+            }
+            if (!username.trim()) {
+                Alert.alert('Username required', 'Enter a username.');
+                return;
+            }
+            if (!/^[A-Za-z0-9_.]+$/.test(username.trim())) {
+                Alert.alert('Invalid username', 'Use only letters, numbers, underscores, and periods.');
+                return;
+            }
+            if (password.length < 6) {
+                Alert.alert('Password too short', 'Password must be at least 6 characters long.');
+                return;
+            }
+            if (password !== confirmPassword) {
+                Alert.alert('Passwords do not match', 'Enter the same password in both fields.');
+                return;
+            }
 
             const response = await fetch(`https://canteen-backend-xzko.onrender.com/auth/${endpoint}/register`, {
                 method: 'POST',
@@ -53,10 +79,10 @@ export default function Register(){
             }
 
             if (!response.ok) {
-                const detail = Array.isArray(data.detail)
-                    ? data.detail.map(item => item.msg).join('\n')
-                    : data.detail;
-                Alert.alert('Registration Failed', detail || `Server error (${response.status}).`);
+                Alert.alert(
+                    'Registration Failed',
+                    getAuthErrorMessage(data, `Unable to register (server error ${response.status}).`),
+                );
                 return;
             }
 
@@ -143,11 +169,9 @@ export default function Register(){
 
                 <View style={styles.formInputComponent}>
                     <Text style={styles.formInputLabel}>Password</Text>
-                    <TextInput 
-                        style={styles.inputText}
+                    <PasswordInput
                         placeholder='Enter Password...'
                         placeholderTextColor="#666666"
-                        secureTextEntry={false}
                         onChangeText={value=>setPassword(value)}
                     />
                 </View>
@@ -156,11 +180,10 @@ export default function Register(){
                         <Text style={(focus===true && password!==confirmPassword)?register.confirmPasswordMismatchLabels:styles.formInputLabel}>Confirm Password</Text>
                         {(focus===true && password!==confirmPassword) && <Text style={(focus===true && password!==confirmPassword)?register.confirmPasswordMismatchLabels:styles.formInputLabel}>Password Mismatch</Text>}
                     </View>
-                    <TextInput 
-                        style={[styles.inputText, (focus===true && password!==confirmPassword) && register.inputTextMismatch]}
+                    <PasswordInput
+                        style={(focus===true && password!==confirmPassword) && register.inputTextMismatch}
                         placeholder='Enter Password Again...'
                         placeholderTextColor="#666666"
-                        secureTextEntry={false}
                         onFocus={()=>setFocus(true)}
                         onChangeText={value=>setConfirmPassword(value)}
                     />

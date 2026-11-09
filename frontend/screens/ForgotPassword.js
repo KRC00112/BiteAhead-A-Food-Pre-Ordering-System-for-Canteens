@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import styles from "../styles";
+import PasswordInput from "../components/PasswordInput";
+import { getAuthErrorMessage } from "../components/authMessages";
 
 const API_URL = "https://canteen-backend-xzko.onrender.com";
 
@@ -48,7 +50,7 @@ export default function ForgotPassword() {
       });
       const data = await response.json();
       if (!response.ok) {
-        showMessage("Unable to send code", data.detail || "Please try again.");
+        showMessage("Unable to send code", getAuthErrorMessage(data, "Please try again."));
         return;
       }
 
@@ -92,7 +94,10 @@ export default function ForgotPassword() {
       });
       const data = await response.json();
       if (!response.ok) {
-        showMessage("Password reset failed", data.detail || "Please check the code and try again.");
+        showMessage(
+          "Password reset failed",
+          getAuthErrorMessage(data, "Please check the code and try again."),
+        );
         return;
       }
 
@@ -153,24 +158,20 @@ export default function ForgotPassword() {
             </View>
             <View style={styles.formInputComponent}>
               <Text style={styles.formInputLabel}>New Password</Text>
-              <TextInput
-                style={styles.inputText}
+              <PasswordInput
                 value={newPassword}
                 placeholder="Enter new password..."
                 placeholderTextColor="#666666"
                 onChangeText={setNewPassword}
-                secureTextEntry
               />
             </View>
             <View style={styles.formInputComponent}>
               <Text style={styles.formInputLabel}>Confirm Password</Text>
-              <TextInput
-                style={styles.inputText}
+              <PasswordInput
                 value={confirmPassword}
                 placeholder="Confirm new password..."
                 placeholderTextColor="#666666"
                 onChangeText={setConfirmPassword}
-                secureTextEntry
               />
             </View>
             <Pressable

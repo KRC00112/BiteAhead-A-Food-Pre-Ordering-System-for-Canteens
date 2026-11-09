@@ -24,6 +24,20 @@ const styles = StyleSheet.create({
     boxShadow: '3px 3px rgba(0, 0, 0, 1)',
     outlineStyle: 'none',
   },
+  passwordInputContainer: {
+    position: 'relative',
+  },
+  passwordInput: {
+    paddingRight: 52,
+  },
+  passwordVisibilityButton: {
+    position: 'absolute',
+    right: 14,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   formInputComponent: {
     marginTop: 16,
     gap: 8,
@@ -53,7 +67,7 @@ const styles = StyleSheet.create({
   },
   accountAvailabilityMessage:{
     marginTop: 24,
-    alignSelf: 'center',
+    // alignSelf: 'center',
     fontSize: 15,
     fontWeight: '500',
     color: '#333333',
