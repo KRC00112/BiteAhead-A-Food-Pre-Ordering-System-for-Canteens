@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { Text, View } from 'react-native';
+import { Alert, Platform, Text, View } from 'react-native';
 import styles from './styles'
 
 import Login from "./screens/Login"
@@ -21,6 +21,32 @@ import AdminTabs from './screens/admin/AdminTabs';
 import StaffTabs from './screens/staff/StaffTabs';
 import Orders from './screens/customer/Orders';
 import ForgotPassword from './screens/ForgotPassword';
+
+if (Platform.OS === 'web') {
+  const nativeAlert = Alert.alert;
+
+  Alert.alert = (title, message, buttons) => {
+    const alertMessage = [title, message].filter(Boolean).join('\n\n');
+    const actionButton = buttons?.find(
+      button => button.onPress && button.style !== 'cancel',
+    );
+
+    if (buttons?.length > 1 && actionButton) {
+      if (window.confirm(alertMessage)) {
+        actionButton.onPress();
+      }
+      return;
+    }
+
+    if (typeof window.alert === 'function') {
+      window.alert(alertMessage);
+      actionButton?.onPress?.();
+      return;
+    }
+
+    nativeAlert(title, message, buttons);
+  };
+}
 
 
 

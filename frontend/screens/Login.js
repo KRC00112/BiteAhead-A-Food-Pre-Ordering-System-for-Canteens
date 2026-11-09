@@ -1,10 +1,11 @@
-import { Alert, Pressable, Text, View, Platform } from 'react-native';
+import { Alert, Pressable, Text, View, TextInput } from 'react-native';
 import login from '../styles/screens/login';
 import styles from '../styles'
-import { TextInput } from 'react-native';
+import PasswordInput from '../components/PasswordInput';
 import {useNavigation} from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
+import { getAuthErrorMessage } from '../components/authMessages';
 
 
 export default function Login(){
@@ -14,6 +15,15 @@ export default function Login(){
     
 
     async function sendData(){
+    if (!instituteID.trim()) {
+        Alert.alert('Institute ID required', 'Enter your Institute ID.');
+        return;
+    }
+    if (!password) {
+        Alert.alert('Password required', 'Enter your password.');
+        return;
+    }
+
     try{
         const response = await fetch(`https://canteen-backend-xzko.onrender.com/auth/login`,{
             method: 'POST',
@@ -29,22 +39,24 @@ export default function Login(){
         });
          
         if(!response.ok){
-            if(Platform.OS==='web'){
-                alert('Login Failed', "something went wrong");
-                return;
+            const responseText = await response.text();
+            let data = {};
+            try {
+                data = responseText ? JSON.parse(responseText) : {};
+            } catch {
+                data = {};
             }
-            Alert.alert('Login Failed', "something went wrong");
-            console.log(response)
+            Alert.alert(
+                'Login Failed',
+                response.status === 401
+                    ? 'The Institute ID or password is incorrect.'
+                    : getAuthErrorMessage(data, `Unable to log in (server error ${response.status}).`),
+            );
             return;
         }
         const data=await response.json();
         console.log(JSON.stringify(data));
-        if (Platform.OS === 'web') {
-                alert('Logged In Successfully!');
-                navigation.popTo('Home', { userData: data });
-        }else{
-
-             Alert.alert(
+        Alert.alert(
                 'Success', 'Logged In Successfully!', [
                     {
                         text: 'Go to Home',
@@ -52,9 +64,6 @@ export default function Login(){
                     }
                 ]
             );
-
-        }
-
        
     }catch(error){
         Alert.alert('connection Error', 'Unable to connect to server.  Please try again');
@@ -80,11 +89,9 @@ export default function Login(){
                 </View>
                 <View style={styles.formInputComponent}>
                     <Text style={styles.formInputLabel}>Password</Text>
-                    <TextInput 
-                        style={styles.inputText}
+                    <PasswordInput
                         placeholder='Enter Password...'
                         placeholderTextColor="#666666"
-                        secureTextEntry={false}
                         onChangeText={value=>setPassword(value)}
                     />
                 </View>
@@ -94,13 +101,11 @@ export default function Login(){
                 <Text style={styles.accountAvailabilityMessage}>
                     Don't have an account? <Text style={styles.link} onPress={() =>navigation.navigate('Register')}>Register here!</Text>
                 </Text>
-                <Text style={styles.accountAvailabilityMessage}>
-                    Forgot your password?{" "}
-                    <Text style={styles.link} onPress={() => navigation.navigate('ForgotPassword')}>
-                        Reset it here
-                    </Text>
-                </Text>
 
+                <Text style={styles.accountAvailabilityMessage}>
+                    Forgot your password? <Text style={styles.link} onPress={() =>navigation.navigate('ForgotPassword')}>Reset it here</Text>
+                </Text>
+                
             </View>
 
         </SafeAreaView>
