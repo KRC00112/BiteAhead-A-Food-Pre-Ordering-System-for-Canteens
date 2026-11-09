@@ -181,7 +181,8 @@ export default function Register(){
                         {(focus===true && password!==confirmPassword) && <Text style={(focus===true && password!==confirmPassword)?register.confirmPasswordMismatchLabels:styles.formInputLabel}>Password Mismatch</Text>}
                     </View>
                     <PasswordInput
-                        style={(focus===true && password!==confirmPassword) && register.inputTextMismatch}
+                        mismatch={focus === true && password !== confirmPassword}
+                        style={[(focus===true && password!==confirmPassword) &&  {color:'red', borderColor: 'red'} ]}
                         placeholder='Enter Password Again...'
                         placeholderTextColor="#666666"
                         onFocus={()=>setFocus(true)}

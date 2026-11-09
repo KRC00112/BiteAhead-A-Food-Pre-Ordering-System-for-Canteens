@@ -26,6 +26,11 @@ const styles = StyleSheet.create({
   },
   passwordInputContainer: {
     position: 'relative',
+    boxShadow: '3px 3px rgba(0, 0, 0, 1)',
+
+  },
+  passwordInputMismatch: {
+    boxShadow: '4px 5px rgba(255, 0, 0)',
   },
   passwordInput: {
     paddingRight: 52,

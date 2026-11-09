@@ -28,12 +28,7 @@ const register = StyleSheet.create({
   confirmPasswordMismatchLabels:{
     color:'red',
   },
-   inputTextMismatch: {
-      color:'red',
-      borderColor: 'red',
-      boxShadow: '4px 5px rgba(255, 0, 0)',
 
-  }
 });
 
 export default register;
