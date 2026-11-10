@@ -126,7 +126,7 @@ export default function Register(){
                     />
                 </View>
                 <View style={styles.formInputComponent}>
-                    <Text style={styles.formInputLabel}>Recovery email (optional)</Text>
+                    <Text style={styles.formInputLabel}>Recovery email</Text>
                     <TextInput
                         style={styles.inputText}
                         placeholder="Enter recovery email..."
