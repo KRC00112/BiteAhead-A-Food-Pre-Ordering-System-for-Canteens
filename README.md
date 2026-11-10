@@ -29,7 +29,7 @@ The project has two parts:
 - Cash payment at the counter
 - Ratings and feedback for completed orders
 - In-app notifications
-- “Notify me” alerts for items that are out of stock
+- Alerts for items that are out of stock
 
 ### Staff tools
 
