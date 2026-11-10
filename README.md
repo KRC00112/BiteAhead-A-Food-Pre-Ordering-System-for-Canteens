@@ -15,8 +15,7 @@ The project has two parts:
 
 - Student and faculty registration
 - Login and logout with role-based access
-- Forgot-password and password-reset flow
-- Profile viewing and email updates
+- password-reset flow
 - Menu browsing with categories, search, vegetarian/non-vegetarian labels, prices, cooking
   times, ingredients, availability, and food images
 - Cart management
