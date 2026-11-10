@@ -109,10 +109,15 @@ const Navigation = createStaticNavigation(RootStack);
 
 export default function App() {
   return (
-    <SafeAreaProvider >
-        {/* <Login />  */}
+    <SafeAreaProvider>
+      <SafeAreaView edges={['top']} style={styles.appBrandSafeArea}>
+        <View style={styles.appBrandBar}>
+          <Text style={styles.appBrandText}>BiteAhead!</Text>
+        </View>
+      </SafeAreaView>
+      <View style={{ flex: 1 }}>
         <Navigation/>
-
+      </View>
     </SafeAreaProvider>
   );
 }

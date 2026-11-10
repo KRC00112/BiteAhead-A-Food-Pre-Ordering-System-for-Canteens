@@ -5,6 +5,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFF8E7',
   },
+  appBrandSafeArea: {
+    backgroundColor: '#FFD43B',
+  },
+  appBrandBar: {
+    minHeight: 44,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    borderBottomWidth: 3,
+    borderBottomColor: '#111111',
+  },
+  appBrandText: {
+    color: '#111111',
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
   header: {
     color: '#111111',
     textTransform: 'uppercase',
