@@ -178,3 +178,7 @@ The backend includes `backend/render.yaml` for deployment to Render. The service
 
 The application has in-app notifications, but push notifications through FCM have not been
 added yet.
+
+UPI payments through Razorpay were subject to KYC-related requirements during implementation,
+which limited the availability of the UPI payment flow for this project. Wallet payments and
+cash payment at the counter remain supported.
