@@ -1,6 +1,6 @@
-# Canteen App
+# BiteAhead!: A Food Pre-Ordering System for Canteens
 
-Canteen App is a mobile pre-ordering system for a college canteen. Students and faculty can
+BiteAhead! is a mobile pre-ordering system for a college canteen. Students and faculty can
 browse the menu, place orders, and pay before collecting their food. Canteen staff manage the
 orders and stock, while administrators manage the menu, users, and reports.
 
